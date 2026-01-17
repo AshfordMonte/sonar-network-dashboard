@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Network Overview</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="panel" aria-label="Network Overview">
+        <header class="panel__header">
+          <h1 class="panel__title">Network Overview</h1>
+          <div class="panel__actions" aria-hidden="true">
+            <span class="icon">▾</span>
+            <span class="icon">×</span>
+          </div>
+        </header>
+
+        <!-- Infrastructure -->
+        <div class="section">
+          <div class="section__label">
+            <h2>Infrastructure Equipment</h2>
+            <span class="section__underline section__underline--green"></span>
+          </div>
+
+          <div class="tiles">
+            <div class="tile tile--neutral">
+              <div class="tile__value" id="infra-good">—</div>
+              <div class="tile__label">Good</div>
+            </div>
+
+            <div class="tile tile--neutral">
+              <div class="tile__value" id="infra-warning">—</div>
+              <div class="tile__label">Warning</div>
+            </div>
+
+            <div class="tile tile--neutral">
+              <div class="tile__value" id="infra-bad">—</div>
+              <div class="tile__label">Bad</div>
+            </div>
+
+            <div class="tile tile--down">
+              <div class="tile__value" id="infra-down">—</div>
+              <div class="tile__label tile__label--down">Down</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customer -->
+        <div class="section section--spaced">
+          <div class="section__label">
+            <h2>Customer Equipment</h2>
+            <span class="section__underline section__underline--green"></span>
+          </div>
+
+          <div class="tiles">
+            <div class="tile tile--neutral">
+              <div class="tile__value" id="cust-good">—</div>
+              <div class="tile__label">Good</div>
+            </div>
+
+            <div class="tile tile--neutral">
+              <div class="tile__value" id="cust-warning">—</div>
+              <div class="tile__label">Warning</div>
+            </div>
+
+            <div class="tile tile--neutral">
+              <div class="tile__value" id="cust-bad">—</div>
+              <div class="tile__label">Bad</div>
+            </div>
+
+            <div class="tile tile--down">
+              <div class="tile__value" id="cust-down">—</div>
+              <div class="tile__label tile__label--down">Down</div>
+            </div>
+          </div>
+        </div>
+
+        <footer class="panel__footer">
+          <div class="status">
+            <span class="status__dot" id="api-dot" aria-hidden="true"></span>
+            <span class="status__text" id="api-status">Loading…</span>
+          </div>
+
+          <div class="updated" id="last-updated" aria-live="polite"></div>
+        </footer>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
