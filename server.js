@@ -103,6 +103,29 @@ query full_list($companyId: Int64Bit, $accountStatusID: Int64Bit) {
 }
 `;
 
+// ---- Sonar Query (Down Accounts List) ----
+const DOWN_ACCOUNTS_QUERY = `
+query down_accounts($companyId: Int64Bit, $accountStatusID: Int64Bit) {
+  accounts(
+    company_id: $companyId
+    reverse_relation_filters: [
+      { relation: "addresses.inventory_items"
+        search: { string_fields: [{ attribute: "icmp_device_status", search_value: "Down", match: true }] }
+      }
+    ]
+    account_status_id: $accountStatusID
+  ) {
+    entities {
+      id
+      name
+      addresses { entities { line1 } }
+      ip_assignment_histories { entities { subnet } }
+    }
+  }
+}
+`;
+
+
 /**
  * Cache settings.
  *
@@ -132,6 +155,28 @@ function getEnvInt(name) {
 function pickCount(node) {
   return node?.page_info?.total_count ?? 0;
 }
+
+function uniqStrings(list) {
+  const out = [];
+  const seen = new Set();
+  for (const v of list || []) {
+    const s = String(v || "").trim();
+    if (!s) continue;
+    if (seen.has(s)) continue;
+    seen.add(s);
+    out.push(s);
+  }
+  return out;
+}
+
+function firstNonEmpty(list) {
+  for (const v of list || []) {
+    const s = String(v || "").trim();
+    if (s) return s;
+  }
+  return "";
+}
+
 
 /**
  * Calls Sonar GraphQL and returns the customer equipment summary in our
@@ -181,6 +226,51 @@ async function getCustomerEquipmentSummary() {
   const uninventoried = pickCount(data.uninventoried_only);
 
   return { customerEquipment: { good, warning, uninventoried, down, total } };
+}
+async function getDownCustomers() {
+  const endpoint = process.env.SONAR_ENDPOINT;
+  const token = process.env.SONAR_TOKEN;
+
+  if (!endpoint || !token) {
+    throw new Error("Missing SONAR_ENDPOINT or SONAR_TOKEN in .env");
+  }
+
+  const companyId = getEnvInt("SONAR_COMPANY_ID");
+  const accountStatusID = getEnvInt("SONAR_ACCOUNT_STATUS_ID");
+
+  const variables = {
+    companyId: companyId ?? null,
+    accountStatusID: accountStatusID ?? null,
+  };
+
+  const data = await sonarGraphqlRequest({
+    endpoint,
+    token,
+    query: DOWN_ACCOUNTS_QUERY,
+    variables,
+  });
+
+  const entities = data?.accounts?.entities || [];
+
+  // Map Sonar -> frontend shape
+  return entities.map((a) => {
+    const id = a?.id; // Sonar returns as a string in your sample
+    const name = a?.name || "(unknown)";
+
+    const addressLines = uniqStrings(a?.addresses?.entities?.map(x => x?.line1));
+    const address = firstNonEmpty(addressLines);
+
+    const ipAddresses = uniqStrings(a?.ip_assignment_histories?.entities?.map(x => x?.subnet));
+
+    return {
+      customerId: id,
+      customerName: name,
+      status: "Down",
+      deviceName: "—",       // placeholder until you add device details
+      ipAddresses,
+      address,
+    };
+  });
 }
 
 /**
@@ -232,6 +322,34 @@ app.get("/api/status-summary", async (req, res) => {
     });
   }
 });
+
+// Cache for down customer list (separate from summary cache)
+const DOWN_CACHE_MS = 60_000;
+let downCache = { ts: 0, customers: null };
+
+app.get("/api/down-customers", async (req, res) => {
+  try {
+    const now = Date.now();
+
+    if (downCache.customers && now - downCache.ts < DOWN_CACHE_MS) {
+      return res.json({ ok: true, source: "cache", customers: downCache.customers });
+    }
+
+    const customers = await getDownCustomers();
+
+    downCache = { ts: now, customers };
+    res.json({ ok: true, source: "sonar", customers });
+  } catch (err) {
+    console.error("Down customers error:", err);
+    res.status(200).json({
+      ok: false,
+      source: "error",
+      error: err.message,
+      customers: [],
+    });
+  }
+});
+
 
 /**
  * Returns a list of external IPv4 addresses on this machine.
