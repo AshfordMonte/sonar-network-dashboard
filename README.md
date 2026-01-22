@@ -48,6 +48,11 @@ network-dashboard/
 
 
 ## Setup
+Clone the repository into a folder via Bash terminal
+```text
+git clone https://github.com/AshfordMonte/sonar-network-dashboard.git .
+```
+
 Open the .env.example file and fill in the necessary data from your Sonar instance.
 
 ```text
