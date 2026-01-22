@@ -74,6 +74,13 @@ body{
   font-size: 14px;
   line-height: 1;
 }
+.icon--link{
+  cursor: pointer;
+}
+.icon--link:hover{
+  color: rgba(255,255,255,0.95);
+  border-color: rgba(255,255,255,0.18);
+}
 
 .section{
   padding: 14px 16px 16px;
