@@ -1,193 +1,69 @@
-# Customer Network Status Dashboard
+# Sonar Network Dashboard
 
-This is a small internal web dashboard that displays equipment status
-totals from Sonar using their GraphQL API.
+Internal network status dashboard for ISP/WISP operations, built on **Node.js + Express** with a vanilla JS frontend.  
+It pulls data from **Sonar’s GraphQL API**, caches it server-side, and presents it in a user friendly format.
 
-The backend handles all API calls so browser clients never talk to Sonar
-directly.
+## What it does currently
 
-------------------------------------------------------------------------
+- Displays customer device statuses (Good / Warning / Down / Uninventoried)
+- Provides a detailed **Down customers** view (Warning page in progress)
+- Automatically proxies and caches Sonar GraphQL requests
+- Designed for LAN / internal NOC use
 
-## What this shows
+## Tech Stack
 
-Right now, the dashboard displays:
+- **Backend:** Node.js, Express
+- **Frontend:** Vanilla HTML, CSS, JavaScript  
+- **Data:** Sonar GraphQL API
 
-**Customer equipment** - Good - Warning - Down - Uninventoried
-(customer-owned)
+## Project Structure
 
-**Infrastructure equipment** - Placeholder (N/A for now)
-
-It refreshes automatically and shows connection status and last update
-time.
-
-------------------------------------------------------------------------
-
-## Tech stack
-
--   Node.js
--   Express
--   Vanilla HTML / CSS / JS
--   Sonar GraphQL API
-
-------------------------------------------------------------------------
-
-## Project layout
-
-    network-dashboard/
-    ├─ server.js
-    ├─ sonarClient.js
-    ├─ package.json
-    ├─ .env
-    ├─ public/
-    │  ├─ index.html
-    │  ├─ styles.css
-    │  └─ app.js
-
-------------------------------------------------------------------------
-
-## Local setup
-
-### 1. Install Node.js
-
-Node 18+ is required.
-
-Check your version:
-
-    node -v
-
-Download if needed:\
-https://nodejs.org
-
-------------------------------------------------------------------------
-
-### 2. Install dependencies
-
-From the project folder:
-
-    npm install
-
-------------------------------------------------------------------------
-
-### 3. Create a `.env` file
-
-Create a file named `.env` in the project root:
-
-    PORT=XXXX
-
-    SONAR_ENDPOINT=https://example.sonar.software/api/graphql
-    SONAR_TOKEN=your_api_token_here
-
-    SONAR_COMPANY_ID=XX
-    SONAR_ACCOUNT_STATUS_ID=XX
-
-Fill in the Port, Company ID, and Account Status (to see active customers only) 
-based on data in your Sonar instance.
-
-------------------------------------------------------------------------
-
-### 4. Start the server
-
-    npm start
-
-You should see something like:
-
-    Dashboard server started.
-    Local: http://localhost:{PORT}
-    LAN access:
-      → http://XXX.XXX.X.XXX:{PORT}
-
-------------------------------------------------------------------------
-
-### 5. Open the dashboard
-
-From the same machine:
-
-    http://localhost:8{PORT}
-
-From another device on the same network:
-
-    http://<server-ip>:{PORT}
-
-------------------------------------------------------------------------
-
-## How API traffic works
-
-Each browser loads the dashboard and requests:
-
-    GET /api/status-summary
-
-The server: - Calls Sonar - Caches the result - Returns the same data to
-all clients
-
-This means: - Multiple users do not spam Sonar and the API token is never
-exposed
-
-------------------------------------------------------------------------
-
-## Running this on Proxmox (VM or container)
-
-This works well on a small Linux VM. I'm using Proxmox as an example for
-the hypervisor.
-
-------------------------------------------------------------------------
-
-### Basic Proxmox setup
-
-1.  Create a VM
-2.  Install Ubuntu Server
-3.  SSH into the VM
-4.  Install Node.js
-
-```{=html}
-<!-- -->
+```text
+network-dashboard/
+├─ public/                # Frontend (served statically)
+│  ├─ index.html
+│  ├─ down.html
+│  ├─ app.js
+│  ├─ down.js
+│  └─ styles.css
+│
+├─ src/                   # Server-side logic
+│  ├─ routes/             
+│     ├─ api.js           # Express route handlers
+│  ├─ services/           
+│     ├─ sonarService.js  # Formats raw API data
+│  ├─ sonar/              
+│     ├─ queries.js       # Sonar GraphQL queries
+│  └─ utils/              
+│     ├─ env.js           # Validates env file data
+│     ├─ network.js       # Grabs host device local IPv4 addresses
+│     ├─ normalize.js     # Provides helper functions to handle api data
+│
+├─ server.js              # Express app entry point
+├─ sonarClient.js         # Sonar GraphQL client wrapper
+├─ .env.example           # Format example for .env file
+├─ package.json
+└─ README.md
 ```
-    sudo apt update
-    sudo apt install -y curl
-    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-    sudo apt install -y nodejs
 
-5.  Clone the repo
 
-```{=html}
-<!-- -->
+## Setup
+Open the .env.example file and fill in the necessary data from your Sonar instance.
+
+```text
+# Server
+PORT=3000      # This can be any free port on the device
+# Sonar GraphQL
+SONAR_ENDPOINT=https://example.sonar.software/api/graphql   # Replace with Sonar instance domain
+SONAR_TOKEN=replace_me    # Replace with Personal Access Token generated in your User Profile
+
+SONAR_COMPANY_ID=0      # Located at Settings > Company > Companies
+SONAR_ACCOUNT_STATUS_ID=0 # ID for customer Account Status listed as "Active - Company Name"
 ```
-    git clone https://github.com/your-org/network-dashboard.git
-    cd network-dashboard
-
-6.  Install dependencies
-
-```{=html}
-<!-- -->
+Run the following commands in bash to install necessary packages, rename to .env, and start the web server.
+```bash
+npm install
+cp .env.example .env
+npm start
 ```
-    npm install
-
-7.  Create `.env` and edit the required values
-
-```{=html}
-<!-- -->
-```
-    nano .env
-
-8.  Start the server
-
-```{=html}
-<!-- -->
-```
-    npm start
-
-------------------------------------------------------------------------
-
-## Making it persistent
-
-For now this just runs in the shell session. Will need to make it a
-service that auto starts.
-
-------------------------------------------------------------------------
-
-## Security notes
-
-This is currently intended for INTERNAL USE ONLY.
-
-There is: - No authentication - No HTTPS - No access control
-
-------------------------------------------------------------------------
+The server binds to all host IPv4 addresses by default for LAN access.
