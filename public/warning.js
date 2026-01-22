@@ -1,0 +1,146 @@
+/**
+ * warning.js
+ *
+ * Page logic for the "Warning Customers" view.
+ *
+ * Backend provides:
+ *   GET /api/warning-customers
+ */
+
+const el = (id) => document.getElementById(id);
+
+const ui = {
+  rows: el("rows"),
+  empty: el("empty"),
+  count: el("count"),
+  filter: el("filter"),
+  apiDot: el("api-dot"),
+  apiStatus: el("api-status"),
+  lastUpdated: el("last-updated"),
+};
+
+function setApiState(state, message) {
+  ui.apiDot.classList.remove("status__dot--ok", "status__dot--bad");
+  if (state === "ok") ui.apiDot.classList.add("status__dot--ok");
+  if (state === "bad") ui.apiDot.classList.add("status__dot--bad");
+  ui.apiStatus.textContent = message;
+}
+
+function setLastUpdated(date = new Date()) {
+  ui.lastUpdated.textContent = `Last updated: ${date.toLocaleString()}`;
+}
+
+function buildSonarCustomerUrl(customerId) {
+  return `https://wi-fiber.sonar.software/app#/accounts/show/${encodeURIComponent(customerId)}`;
+}
+
+function normalize(s) {
+  return String(s ?? "").toLowerCase();
+}
+
+function joinIps(ipAddresses) {
+  if (!Array.isArray(ipAddresses)) return "";
+  return ipAddresses.filter(Boolean).join(", ");
+}
+
+function renderTable(customers) {
+  ui.rows.innerHTML = "";
+
+  if (!customers.length) {
+    ui.empty.hidden = false;
+    ui.count.textContent = "0 customers";
+    return;
+  }
+
+  ui.empty.hidden = true;
+  ui.count.textContent = `${customers.length} customer${customers.length === 1 ? "" : "s"}`;
+
+  const frag = document.createDocumentFragment();
+
+  for (const c of customers) {
+    const tr = document.createElement("tr");
+
+    // Customer name (clickable)
+    const nameTd = document.createElement("td");
+    const a = document.createElement("a");
+    a.className = "pc-link";
+    a.href = buildSonarCustomerUrl(c.customerId);
+    a.target = "_blank";
+    a.rel = "noreferrer";
+    a.textContent = c.customerName || "(unknown)";
+    nameTd.appendChild(a);
+
+    // Status
+    const statusTd = document.createElement("td");
+    statusTd.innerHTML = `<span class="badge badge--warning">${c.status || "Warning"}</span>`;
+
+    // Device / notes
+    const deviceTd = document.createElement("td");
+    deviceTd.textContent = c.deviceName || "—";
+
+    // IPs
+    const ipTd = document.createElement("td");
+    ipTd.textContent = joinIps(c.ipAddresses) || "—";
+
+    // Address
+    const addrTd = document.createElement("td");
+    addrTd.textContent = c.address || "—";
+
+    tr.append(nameTd, statusTd, deviceTd, ipTd, addrTd);
+    frag.appendChild(tr);
+  }
+
+  ui.rows.appendChild(frag);
+}
+
+async function fetchWarningCustomers() {
+  const res = await fetch("/api/warning-customers", { cache: "no-store" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
+}
+
+let lastCustomers = [];
+
+function applyFilter() {
+  const q = normalize(ui.filter.value);
+
+  if (!q) {
+    renderTable(lastCustomers);
+    return;
+  }
+
+  const filtered = lastCustomers.filter((c) => {
+    const blob = [
+      c.customerName,
+      c.status,
+      c.deviceName,
+      joinIps(c.ipAddresses),
+      c.address,
+    ].map(normalize).join(" | ");
+
+    return blob.includes(q);
+  });
+
+  renderTable(filtered);
+}
+
+async function init() {
+  try {
+    const payload = await fetchWarningCustomers();
+    if (!payload.ok) throw new Error(payload.error || "API returned ok=false");
+
+    lastCustomers = Array.isArray(payload.customers) ? payload.customers : [];
+    setApiState("ok", payload.source === "cache" ? "API: Connected (cached)" : "API: Connected");
+    setLastUpdated(new Date());
+    renderTable(lastCustomers);
+  } catch (err) {
+    console.error(err);
+    setApiState("bad", "API: Request failed");
+    setLastUpdated(new Date());
+    renderTable([]);
+  }
+
+  ui.filter.addEventListener("input", applyFilter);
+}
+
+init();

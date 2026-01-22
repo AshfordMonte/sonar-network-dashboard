@@ -320,6 +320,12 @@ body{
   color: white;
 }
 
+.badge--warning{
+  background: rgba(242,201,76,0.95); /* --yellow */
+  color: rgba(0,0,0,0.85);
+}
+
+
 .table-empty{
   padding: 18px 16px;
   color: rgba(255,255,255,0.55);
