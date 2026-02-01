@@ -5,6 +5,7 @@
  *
  * Backend provides:
  *   GET /api/warning-customers
+ *   POST /api/suppressions/accounts/:id
  */
 
 const el = (id) => document.getElementById(id);
@@ -86,7 +87,20 @@ function renderTable(customers) {
     const addrTd = document.createElement("td");
     addrTd.textContent = c.address || "—";
 
-    tr.append(nameTd, statusTd, deviceTd, ipTd, addrTd);
+    // Actions
+    const actionsTd = document.createElement("td");
+    actionsTd.className = "actions-col";
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "suppress-btn";
+    btn.dataset.id = String(c.customerId);
+    btn.textContent = "Suppress";
+    btn.title = "Suppress this account";
+
+    actionsTd.appendChild(btn);
+
+    tr.append(nameTd, statusTd, deviceTd, ipTd, addrTd, actionsTd);
     frag.appendChild(tr);
   }
 
@@ -116,7 +130,9 @@ function applyFilter() {
       c.deviceName,
       joinIps(c.ipAddresses),
       c.address,
-    ].map(normalize).join(" | ");
+    ]
+      .map(normalize)
+      .join(" | ");
 
     return blob.includes(q);
   });
@@ -142,5 +158,43 @@ async function init() {
 
   ui.filter.addEventListener("input", applyFilter);
 }
+
+// Suppress button handler (event delegation)
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".suppress-btn");
+  if (!btn) return;
+
+  const id = btn.dataset.id;
+  if (!id) return;
+
+  btn.disabled = true;
+  const oldText = btn.textContent;
+  btn.textContent = "…";
+
+  try {
+    const res = await fetch(`/api/suppressions/accounts/${encodeURIComponent(id)}`, {
+      method: "POST",
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status} ${text}`);
+    }
+
+    // Re-fetch data so summary + table stay in sync
+    const payload = await fetchWarningCustomers();
+    if (!payload.ok) throw new Error(payload.error || "API returned ok=false");
+
+    lastCustomers = Array.isArray(payload.customers) ? payload.customers : [];
+    applyFilter();
+    setApiState("ok", payload.source === "cache" ? "API: Connected (cached)" : "API: Connected");
+    setLastUpdated(new Date());
+  } catch (err) {
+    console.error("Suppress failed:", err);
+    btn.disabled = false;
+    btn.textContent = oldText;
+    alert("Failed to suppress. Check console/logs.");
+  }
+});
 
 init();

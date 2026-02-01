@@ -6,7 +6,8 @@
     <title>Warning Customers</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
+
+  <body class="page--wide">
     <main class="page">
       <section class="panel panel--wide panel--tall" aria-label="Warning Customers">
         <header class="panel__header">
@@ -25,7 +26,13 @@
           </div>
 
           <div class="table-toolbar__right">
-            <input id="filter" class="filter" type="search" placeholder="Filter by customer / IP / address…" />
+            <input
+              id="filter"
+              class="filter"
+              type="search"
+              placeholder="Filter by customer / IP / address…"
+              aria-label="Filter warning customers"
+            />
             <span class="updated" id="last-updated"></span>
           </div>
         </div>
@@ -39,8 +46,10 @@
                 <th>Device / Notes</th>
                 <th>IP Address</th>
                 <th>Address</th>
+                <th class="actions-col" title="Suppress accounts from views and totals">Actions</th>
               </tr>
             </thead>
+
             <tbody id="rows">
               <!-- Filled by warning.js -->
             </tbody>
@@ -60,4 +69,3 @@
     <script src="./warning.js"></script>
   </body>
 </html>
-

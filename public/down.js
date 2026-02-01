@@ -3,23 +3,9 @@
  *
  * Page logic for the "Down Customers" view.
  *
- * Backend (later) should provide:
+ * Backend provides:
  *   GET /api/down-customers
- *
- * Expected response shape (suggested):
- * {
- *   ok: true,
- *   customers: [
- *     {
- *       customerId: 123,
- *       customerName: "Jane Doe",
- *       status: "Down",
- *       deviceName: "Customer Router (or CPE name)",
- *       ipAddresses: ["10.1.2.3", "10.1.2.4"],
- *       address: "123 Main St, City, ST ZIP"
- *     }
- *   ]
- * }
+ *   POST /api/suppressions/accounts/:id
  */
 
 const el = (id) => document.getElementById(id);
@@ -46,11 +32,8 @@ function setLastUpdated(date = new Date()) {
 }
 
 function buildSonarCustomerUrl(customerId) {
-  // Your provided pattern:
-  // https://wi-fiber.sonar.software/app#/accounts/show/X
   return `https://wi-fiber.sonar.software/app#/accounts/show/${encodeURIComponent(customerId)}`;
 }
-
 
 function normalize(s) {
   return String(s ?? "").toLowerCase();
@@ -104,7 +87,20 @@ function renderTable(customers) {
     const addrTd = document.createElement("td");
     addrTd.textContent = c.address || "—";
 
-    tr.append(nameTd, statusTd, deviceTd, ipTd, addrTd);
+    // Actions
+    const actionsTd = document.createElement("td");
+    actionsTd.className = "actions-col";
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "suppress-btn";
+    btn.dataset.id = String(c.customerId);
+    btn.textContent = "Suppress";
+    btn.title = "Suppress this account";
+
+    actionsTd.appendChild(btn);
+
+    tr.append(nameTd, statusTd, deviceTd, ipTd, addrTd, actionsTd);
     frag.appendChild(tr);
   }
 
@@ -115,34 +111,6 @@ async function fetchDownCustomers() {
   const res = await fetch("/api/down-customers", { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return await res.json();
-}
-
-/**
- * Temporary mock data so the page looks right today.
- * Once you add /api/down-customers, this will only be used when the API fails.
- */
-function getMock() {
-  return {
-    ok: true,
-    customers: [
-      {
-        customerId: 101,
-        customerName: "Example Customer",
-        status: "Down",
-        deviceName: "Customer CPE",
-        ipAddresses: ["172.20.1.236"],
-        address: "120 Roy Nichols Blanco TX, 78606",
-      },
-      {
-        customerId: 102,
-        customerName: "Another Customer",
-        status: "Down",
-        deviceName: "Customer Router",
-        ipAddresses: ["10.100.61.102", "172.18.1.58"],
-        address: "112 N Avenue O Johnson City TX, 78636",
-      },
-    ],
-  };
 }
 
 let lastCustomers = [];
@@ -162,7 +130,9 @@ function applyFilter() {
       c.deviceName,
       joinIps(c.ipAddresses),
       c.address,
-    ].map(normalize).join(" | ");
+    ]
+      .map(normalize)
+      .join(" | ");
 
     return blob.includes(q);
   });
@@ -176,18 +146,55 @@ async function init() {
     if (!payload.ok) throw new Error(payload.error || "API returned ok=false");
 
     lastCustomers = Array.isArray(payload.customers) ? payload.customers : [];
-    setApiState("ok", "API: Connected");
+    setApiState("ok", payload.source === "cache" ? "API: Connected (cached)" : "API: Connected");
     setLastUpdated(new Date());
     renderTable(lastCustomers);
   } catch (err) {
-    const payload = getMock();
-    lastCustomers = payload.customers;
-    setApiState("bad", "API: Using mock data");
+    console.error(err);
+    setApiState("bad", "API: Request failed");
     setLastUpdated(new Date());
-    renderTable(lastCustomers);
+    renderTable([]);
   }
 
   ui.filter.addEventListener("input", applyFilter);
 }
+
+// Suppress button handler (event delegation)
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".suppress-btn");
+  if (!btn) return;
+
+  const id = btn.dataset.id;
+  if (!id) return;
+
+  btn.disabled = true;
+  const oldText = btn.textContent;
+  btn.textContent = "…";
+
+  try {
+    const res = await fetch(`/api/suppressions/accounts/${encodeURIComponent(id)}`, {
+      method: "POST",
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status} ${text}`);
+    }
+
+    // Re-fetch so table + summary stay consistent
+    const payload = await fetchDownCustomers();
+    if (!payload.ok) throw new Error(payload.error || "API returned ok=false");
+
+    lastCustomers = Array.isArray(payload.customers) ? payload.customers : [];
+    applyFilter();
+    setApiState("ok", payload.source === "cache" ? "API: Connected (cached)" : "API: Connected");
+    setLastUpdated(new Date());
+  } catch (err) {
+    console.error("Suppress failed:", err);
+    btn.disabled = false;
+    btn.textContent = oldText;
+    alert("Failed to suppress. Check console/logs.");
+  }
+});
 
 init();

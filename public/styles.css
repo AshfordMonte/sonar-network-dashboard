@@ -463,3 +463,55 @@ body.page--wide .panel__header{
 body.page--wide .table-wrap{
   overflow: auto;
 }
+/* ===== Actions column + Suppress button ===== */
+
+.pc-table thead th.actions-col,
+.pc-table tbody td.actions-col{
+  text-align: center;
+  width: 120px;
+  white-space: nowrap;
+}
+
+.suppress-btn{
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.82);
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+
+  cursor: pointer;            /* the click icon */
+  user-select: none;
+  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease, color 120ms ease;
+}
+
+.suppress-btn:hover{
+  border-color: rgba(255,255,255,0.30);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.92);
+  transform: translateY(-1px);
+}
+
+.suppress-btn:active{
+  transform: translateY(0px);
+  background: rgba(255,255,255,0.045);
+}
+
+.suppress-btn:focus-visible{
+  outline: 2px solid rgba(42,168,255,0.35);
+  outline-offset: 2px;
+}
+
+.suppress-btn:disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+.pc-table tbody tr:hover .suppress-btn{
+  border-color: rgba(255,255,255,0.26);
+}
+
