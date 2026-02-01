@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Suppressed Customers</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+
+  <body class="page--wide">
+    <main class="page">
+      <section class="panel panel--wide panel--tall" aria-label="Suppressed Customers">
+        <header class="panel__header">
+          <div class="panel__header-left">
+            <a class="back-link" href="/" aria-label="Back to dashboard">← Back</a>
+            <h1 class="panel__title">Suppressed Customers</h1>
+          </div>
+        </header>
+
+        <div class="table-toolbar">
+          <div class="table-toolbar__left">
+            <div class="status">
+              <span class="status__dot" id="api-dot" aria-hidden="true"></span>
+              <span class="status__text" id="api-status">Loading…</span>
+            </div>
+          </div>
+
+          <div class="table-toolbar__right">
+            <input
+              id="filter"
+              class="filter"
+              type="search"
+              placeholder="Filter by customer / IP / address…"
+              aria-label="Filter suppressed customers"
+            />
+            <span class="updated" id="last-updated"></span>
+          </div>
+        </div>
+
+        <div class="table-wrap" role="region" aria-label="Suppressed Customers Table" tabindex="0">
+          <table class="pc-table">
+            <thead>
+              <tr>
+                <th>Customer Name</th>
+                <th>Status</th>
+                <th>Device / Notes</th>
+                <th>IP Address</th>
+                <th>Address</th>
+                <th class="actions-col">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody id="rows">
+              <!-- Filled by suppressed.js -->
+            </tbody>
+          </table>
+
+          <div class="table-empty" id="empty" hidden>
+            No suppressed customers.
+          </div>
+        </div>
+
+        <footer class="panel__footer">
+          <span id="count">0 customers</span>
+        </footer>
+      </section>
+    </main>
+
+    <script src="./suppressed.js"></script>
+  </body>
+</html>

@@ -9,10 +9,15 @@
 
   <body class="page--wide">
     <main class="page">
-      <section class="panel panel--wide panel--tall" aria-label="Down Customers">
+      <section
+        class="panel panel--wide panel--tall"
+        aria-label="Down Customers"
+      >
         <header class="panel__header">
           <div class="panel__header-left">
-            <a class="back-link" href="/" aria-label="Back to dashboard">← Back</a>
+            <a class="back-link" href="/" aria-label="Back to dashboard"
+              >← Back</a
+            >
             <h1 class="panel__title">Down Customers</h1>
           </div>
         </header>
@@ -37,7 +42,12 @@
           </div>
         </div>
 
-        <div class="table-wrap" role="region" aria-label="Down Customers Table" tabindex="0">
+        <div
+          class="table-wrap"
+          role="region"
+          aria-label="Down Customers Table"
+          tabindex="0"
+        >
           <table class="pc-table">
             <thead>
               <tr>
@@ -46,7 +56,12 @@
                 <th>Device / Notes</th>
                 <th>IP Address</th>
                 <th>Address</th>
-                <th class="actions-col" title="Suppress accounts from views and totals">Actions</th>
+                <th
+                  class="actions-col"
+                  title="Suppress accounts from views and totals"
+                >
+                  Actions
+                </th>
               </tr>
             </thead>
 
@@ -55,9 +70,13 @@
             </tbody>
           </table>
 
-          <div class="table-empty" id="empty" hidden>
-            No results.
-          </div>
+          <div class="table-empty" id="empty" hidden>No results.</div>
+        </div>
+        <div class="suppressed-hint">
+          <span>Some customers may be hidden.</span>
+          <a href="/suppressed.html" class="suppressed-link">
+            View suppressed customers →
+          </a>
         </div>
 
         <footer class="panel__footer">
