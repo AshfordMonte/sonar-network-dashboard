@@ -12,8 +12,9 @@ const path = require("path");
 const express = require("express");
 const dotenv = require("dotenv");
 
-const apiRouter = require("./src/routes/api");
+const { router: apiRouter } = require("./src/routes/api");
 const { getLocalIPs } = require("./src/utils/network");
+const suppressionsRouter = require("./src/routes/suppressions");
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 
 // API
 app.use("/api", apiRouter);
+app.use("/api/suppressions", suppressionsRouter);
 
 app.listen(PORT, HOST, () => {
   console.log("Dashboard server started.");

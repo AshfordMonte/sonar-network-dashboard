@@ -8,6 +8,7 @@ const {
   FULL_LIST_QUERY,
   DOWN_ACCOUNTS_QUERY,
   WARNING_ACCOUNTS_QUERY,
+  ACCOUNT_BY_ID_QUERY,
 } = require("../sonar/queries");
 
 //Grabs env variables to build the sonar api calls
@@ -48,17 +49,73 @@ async function getCustomerEquipmentSummary() {
   return { customerEquipment: { good, warning, uninventoried, down, total } };
 }
 
+async function getCustomersByIds(customerIds = []) {
+  if (!customerIds.length) return [];
+
+  const { endpoint, token } = getSonarConfig();
+
+  // Small concurrency limit (suppressed list should be small, but this is safer)
+  const CONCURRENCY = 5;
+  const ids = customerIds.map(String);
+
+  const results = [];
+  let idx = 0;
+
+  async function worker() {
+    while (idx < ids.length) {
+      const myIdx = idx++;
+      const idStr = ids[myIdx];
+
+      try {
+        const data = await sonarGraphqlRequest({
+          endpoint,
+          token,
+          query: ACCOUNT_BY_ID_QUERY,
+          variables: { id: Number(idStr) },
+        });
+
+        const entities = data?.accounts?.entities || [];
+        // Reuse existing normalizer for consistent output keys
+        const rows = mapAccountEntitiesToRows(entities, "Suppressed");
+
+        // In practice accounts(id: X) should return 0 or 1 entity, but this is safe
+        for (const row of rows) results.push(row);
+      } catch (err) {
+        // If an ID no longer exists / Sonar errors for that account, skip it
+        // (Optional: console.warn here)
+      }
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.min(CONCURRENCY, ids.length) },
+    () => worker()
+  );
+  await Promise.all(workers);
+
+  // Keep stable ordering matching the suppression list
+  const order = new Map(ids.map((id, i) => [id, i]));
+  results.sort(
+    (a, b) => (order.get(String(a.customerId)) ?? 0) - (order.get(String(b.customerId)) ?? 0)
+  );
+
+  return results;
+}
+
+
 //Formats Sonar customer data into data for the web app below
 function mapAccountEntitiesToRows(entities, statusLabel) {
   return (entities || []).map((a) => {
     const id = a?.id;
     const name = a?.name || "(unknown)";
 
-    const addressLines = uniqStrings(a?.addresses?.entities?.map((x) => x?.line1));
+    const addressLines = uniqStrings(
+      a?.addresses?.entities?.map((x) => x?.line1),
+    );
     const address = firstNonEmpty(addressLines);
 
     const ipAddresses = uniqStrings(
-      a?.ip_assignment_histories?.entities?.map((x) => x?.subnet)
+      a?.ip_assignment_histories?.entities?.map((x) => x?.subnet),
     );
 
     return {
@@ -106,4 +163,5 @@ module.exports = {
   getCustomerEquipmentSummary,
   getDownCustomers,
   getWarningCustomers,
+  getCustomersByIds,
 };

@@ -92,8 +92,23 @@ query warning_accounts($companyId: Int64Bit, $accountStatusID: Int64Bit) {
 }
 `;
 
+const ACCOUNT_BY_ID_QUERY = `
+query account_by_id($id: Int64Bit) {
+  accounts(id: $id) {
+    entities {
+      id
+      name
+      addresses { entities { line1 } }
+      ip_assignment_histories { entities { subnet } }
+    }
+  }
+}
+`;
+
 module.exports = {
   FULL_LIST_QUERY,
   DOWN_ACCOUNTS_QUERY,
   WARNING_ACCOUNTS_QUERY,
+  ACCOUNT_BY_ID_QUERY,
 };
+
