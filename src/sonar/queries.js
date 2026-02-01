@@ -52,6 +52,7 @@ const DOWN_ACCOUNTS_QUERY = `
 query down_accounts($companyId: Int64Bit, $accountStatusID: Int64Bit) {
   accounts(
     company_id: $companyId
+    paginator: {page: 1, records_per_page: 300}
     reverse_relation_filters: [
       { relation: "addresses.inventory_items"
         search: { string_fields: [{ attribute: "icmp_device_status", search_value: "Down", match: true }] }
@@ -73,6 +74,7 @@ const WARNING_ACCOUNTS_QUERY = `
 query warning_accounts($companyId: Int64Bit, $accountStatusID: Int64Bit) {
   accounts(
     company_id: $companyId
+    paginator: {page: 1, records_per_page: 300}
     reverse_relation_filters: [
       { relation: "addresses.inventory_items"
         search: { string_fields: [{ attribute: "icmp_device_status", search_value: "Warning", match: true }] }
