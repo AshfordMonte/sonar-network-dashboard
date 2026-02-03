@@ -20,32 +20,49 @@ It pulls data from **Sonar’s GraphQL API**, caches it server-side, and present
 
 ```text
 network-dashboard/
-├─ public/                # Frontend (served statically)
-│  ├─ index.html
-│  ├─ down.html
-│  ├─ app.js
-│  ├─ down.js
-│  └─ styles.css
+├─ data/
+│  └─ suppressions.json        # Persistent suppression store (shared across users)
 │
-├─ src/                   # Server-side logic
-│  ├─ routes/             
-│     ├─ api.js           # Express route handlers
-│  ├─ services/           
-│     ├─ sonarService.js  # Formats raw API data
-│  ├─ sonar/              
-│     ├─ queries.js       # Sonar GraphQL queries
-│  └─ utils/              
-│     ├─ env.js           # Validates env file data
-│     ├─ network.js       # Grabs host device local IPv4 addresses
-│     ├─ normalize.js     # Provides helper functions to handle api data
+├─ public/                     # Frontend (served statically)
+│  ├─ index.html               # Main dashboard
+│  ├─ app.js                   # Dashboard client logic
+│  ├─ styles.css               # Global UI styles
+│  │
+│  ├─ down.html                # Down customers page
+│  ├─ down.js                  # Down customers table logic
+│  │
+│  ├─ warning.html             # Warning customers page
+│  ├─ warning.js               # Warning customers table logic
+│  │
+│  ├─ suppressed.html          # Suppressed customers page
+│  └─ suppressed.js            # Suppressed customers logic (unsuppress actions)
 │
-├─ server.js              # Express app entry point
-├─ sonarClient.js         # Sonar GraphQL client wrapper
-├─ .env.example           # Format example for .env file
+├─ src/                        # Server-side logic
+│  ├─ routes/
+│  │  ├─ api.js                # Core API endpoints (summary, down, warning, suppressed)
+│  │  └─ suppressions.js       # Suppression CRUD endpoints
+│  │
+│  ├─ services/
+│  │  ├─ sonarService.js       # Sonar data access + data normalization
+│  │  └─ suppressionStore.js   # JSON-backed suppression persistence
+│  │
+│  ├─ sonar/
+│  │  └─ queries.js            # Centralized Sonar GraphQL queries
+│  │
+│  └─ utils/
+│     ├─ env.js                # Environment variable validation
+│     ├─ network.js            # Detects host LAN IP addresses
+│     └─ normalize.js          # Shared data normalization helpers
+│
+├─ .env                        # Local environment configuration
+├─ .env.example                # Example environment file
+├─ .gitignore
 ├─ package.json
+├─ package-lock.json
+├─ server.js                   # Express application entry point
+├─ sonarClient.js              # Sonar GraphQL client wrapper
 └─ README.md
 ```
-
 
 ## Setup
 Clone the repository into a folder via Bash terminal
