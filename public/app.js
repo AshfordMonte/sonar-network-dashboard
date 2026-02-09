@@ -10,7 +10,10 @@
 
 // How often the dashboard refreshes (in milliseconds)
 // 60,000 ms = 60 seconds = 1 minute
-const REFRESH_MS = 60_000;
+const REFRESH_MS =
+  typeof window.DASHBOARD_REFRESH_MS === "number"
+    ? window.DASHBOARD_REFRESH_MS
+    : 60_000;
 
 /**
  * Small helper function to grab DOM elements by ID.
