@@ -10,6 +10,12 @@
 
 const el = (id) => document.getElementById(id);
 
+// How often the page refreshes (in milliseconds)
+const REFRESH_MS =
+  typeof window.DASHBOARD_REFRESH_MS === "number"
+    ? window.DASHBOARD_REFRESH_MS
+    : 60_000;
+
 const ui = {
   rows: el("rows"),
   empty: el("empty"),
@@ -139,7 +145,7 @@ function applyFilter() {
   renderTable(filtered);
 }
 
-async function init() {
+async function refresh() {
   try {
     const payload = await fetchSuppressedCustomers();
     if (!payload.ok) throw new Error(payload.error || "API returned ok=false");
@@ -147,15 +153,19 @@ async function init() {
     lastCustomers = Array.isArray(payload.customers) ? payload.customers : [];
     setApiState("ok", "API: Connected");
     setLastUpdated(new Date());
-    renderTable(lastCustomers);
+    applyFilter();
   } catch (err) {
     console.error(err);
     setApiState("bad", "API: Request failed");
     setLastUpdated(new Date());
     renderTable([]);
   }
+}
 
+async function init() {
   ui.filter.addEventListener("input", applyFilter);
+  await refresh();
+  setInterval(refresh, REFRESH_MS);
 }
 
 // Unsuppress handler
@@ -180,13 +190,7 @@ document.addEventListener("click", async (e) => {
       throw new Error(`HTTP ${res.status} ${text}`);
     }
 
-    const payload = await fetchSuppressedCustomers();
-    if (!payload.ok) throw new Error(payload.error || "API returned ok=false");
-
-    lastCustomers = Array.isArray(payload.customers) ? payload.customers : [];
-    applyFilter();
-    setApiState("ok", "API: Connected");
-    setLastUpdated(new Date());
+    await refresh();
   } catch (err) {
     console.error("Unsuppress failed:", err);
     btn.disabled = false;

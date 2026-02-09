@@ -8,8 +8,10 @@ const {
 } = require("../services/sonarService");
 
 const { getSuppressedAccounts } = require("../services/suppressionStore");
+const { getEnvInt } = require("../utils/env");
 
 const router = express.Router();
+const CACHE_TTL_MS = getEnvInt("CACHE_TTL_MS") ?? 60_000;
 
 // Simple helper cache factory
 function makeCache(ttlMs) {
@@ -25,7 +27,7 @@ function filterSuppressed(customers) {
 
 
 // ---- /api/status-summary ----
-const summaryCache = makeCache(60_000);
+const summaryCache = makeCache(CACHE_TTL_MS);
 
 router.get("/status-summary", async (req, res) => {
   try {
@@ -106,7 +108,7 @@ router.get("/status-summary", async (req, res) => {
 });
 
 // ---- /api/down-customers ----
-const downCache = makeCache(60_000);
+const downCache = makeCache(CACHE_TTL_MS);
 
 router.get("/down-customers", async (req, res) => {
   try {
@@ -143,7 +145,7 @@ router.get("/down-customers", async (req, res) => {
 });
 
 // ---- /api/warning-customers ----
-const warningCache = makeCache(60_000);
+const warningCache = makeCache(CACHE_TTL_MS);
 
 router.get("/warning-customers", async (req, res) => {
   try {

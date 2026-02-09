@@ -75,6 +75,7 @@ Open the .env.example file and fill in the necessary data from your Sonar instan
 ```text
 # Server
 PORT=3000      # This can be any free port on the device
+CACHE_TTL_MS=60000 # Cache duration for Sonar API responses (milliseconds)
 # Sonar GraphQL
 SONAR_ENDPOINT=https://example.sonar.software/api/graphql   # Replace with Sonar instance domain
 SONAR_TOKEN=replace_me    # Replace with Personal Access Token generated in your User Profile
@@ -89,3 +90,13 @@ cp .env.example .env
 npm start
 ```
 The server binds to all host IPv4 addresses by default for LAN access.
+
+## Smoke testing (no browser required)
+
+This repo includes a lightweight smoke test that boots the server and verifies
+the main HTML pages and `/health` respond as expected.
+
+```bash
+npm install
+npm run test:smoke
+```

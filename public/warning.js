@@ -10,6 +10,12 @@
 
 const el = (id) => document.getElementById(id);
 
+// How often the page refreshes (in milliseconds)
+const REFRESH_MS =
+  typeof window.DASHBOARD_REFRESH_MS === "number"
+    ? window.DASHBOARD_REFRESH_MS
+    : 60_000;
+
 const ui = {
   rows: el("rows"),
   empty: el("empty"),
@@ -140,7 +146,7 @@ function applyFilter() {
   renderTable(filtered);
 }
 
-async function init() {
+async function refresh() {
   try {
     const payload = await fetchWarningCustomers();
     if (!payload.ok) throw new Error(payload.error || "API returned ok=false");
@@ -148,15 +154,19 @@ async function init() {
     lastCustomers = Array.isArray(payload.customers) ? payload.customers : [];
     setApiState("ok", payload.source === "cache" ? "API: Connected (cached)" : "API: Connected");
     setLastUpdated(new Date());
-    renderTable(lastCustomers);
+    applyFilter();
   } catch (err) {
     console.error(err);
     setApiState("bad", "API: Request failed");
     setLastUpdated(new Date());
     renderTable([]);
   }
+}
 
+async function init() {
   ui.filter.addEventListener("input", applyFilter);
+  await refresh();
+  setInterval(refresh, REFRESH_MS);
 }
 
 // Suppress button handler (event delegation)
@@ -182,13 +192,7 @@ document.addEventListener("click", async (e) => {
     }
 
     // Re-fetch data so summary + table stay in sync
-    const payload = await fetchWarningCustomers();
-    if (!payload.ok) throw new Error(payload.error || "API returned ok=false");
-
-    lastCustomers = Array.isArray(payload.customers) ? payload.customers : [];
-    applyFilter();
-    setApiState("ok", payload.source === "cache" ? "API: Connected (cached)" : "API: Connected");
-    setLastUpdated(new Date());
+    await refresh();
   } catch (err) {
     console.error("Suppress failed:", err);
     btn.disabled = false;
