@@ -3,15 +3,15 @@
 const { sonarGraphqlRequest } = require("../../sonarClient");
 const { getEnvInt, requireEnv } = require("../utils/env");
 const { pickCount, uniqStrings, firstNonEmpty } = require("../utils/normalize");
-//Imports Graphql queries into variables
 const {
-  FULL_LIST_QUERY,
-  DOWN_ACCOUNTS_QUERY,
-  WARNING_ACCOUNTS_QUERY,
   ACCOUNT_BY_ID_QUERY,
+  CUSTOMER_EQUIPMENT_SUMMARY_QUERY,
+  DOWN_ACCOUNTS_QUERY,
+  INFRASTRUCTURE_EQUIPMENT_SUMMARY_QUERY,
+  INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
+  WARNING_ACCOUNTS_QUERY,
 } = require("../sonar/queries");
 
-//Grabs env variables to build the sonar api calls
 function getSonarConfig() {
   const endpoint = requireEnv("SONAR_ENDPOINT");
   const token = requireEnv("SONAR_TOKEN");
@@ -29,33 +29,83 @@ function getSonarConfig() {
   };
 }
 
-//Full customer count API call and imports into customerEquipment property
-async function getCustomerEquipmentSummary() {
-  const { endpoint, token, variables } = getSonarConfig();
+// Tiny wrapper so the rest of the file does not repeat the request boilerplate.
+async function runSonarQuery(query, variables) {
+  const { endpoint, token } = getSonarConfig();
 
-  const data = await sonarGraphqlRequest({
+  return sonarGraphqlRequest({
     endpoint,
     token,
-    query: FULL_LIST_QUERY,
+    query,
     variables,
   });
+}
 
+function getCustomerQueryVariables() {
+  return getSonarConfig().variables;
+}
+
+function getInfrastructureQueryVariables() {
+  const { companyId } = getSonarConfig().variables;
+  return { companyId };
+}
+
+function mapInventoryCounts(data) {
   const total = pickCount(data.total);
   const good = pickCount(data.good);
   const warning = pickCount(data.warning);
   const down = pickCount(data.down);
   const uninventoried = pickCount(data.uninventoried_only);
 
-  return { customerEquipment: { good, warning, uninventoried, down, total } };
+  return { good, warning, uninventoried, down, total };
+}
+
+function isUninventoriedInfrastructureSite(site) {
+  const inventoryItems = site?.inventory_items?.entities || [];
+
+  // Empty sites do not count here.
+  // We only count sites that have inventory items and every status is blank/null.
+  if (!inventoryItems.length) return false;
+
+  return inventoryItems.every((item) => {
+    const status = String(item?.icmp_device_status || "").trim();
+    return !status;
+  });
+}
+
+async function getCustomerEquipmentSummary() {
+  const data = await runSonarQuery(
+    CUSTOMER_EQUIPMENT_SUMMARY_QUERY,
+    getCustomerQueryVariables(),
+  );
+
+  return { customerEquipment: mapInventoryCounts(data) };
+}
+
+async function getInfrastructureEquipmentSummary() {
+  const variables = getInfrastructureQueryVariables();
+  const [countData, snapshotData] = await Promise.all([
+    runSonarQuery(INFRASTRUCTURE_EQUIPMENT_SUMMARY_QUERY, variables),
+    runSonarQuery(INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY, variables),
+  ]);
+
+  const infrastructureEquipment = mapInventoryCounts(countData);
+  const sites = snapshotData?.network_sites?.entities || [];
+
+  // Sonar gives us good/warning/down counts directly, but the null-only site
+  // case was easier and safer to calculate on our side.
+  infrastructureEquipment.uninventoried = sites.filter(
+    isUninventoriedInfrastructureSite,
+  ).length;
+
+  return { infrastructureEquipment };
 }
 
 async function getCustomersByIds(customerIds = []) {
   if (!customerIds.length) return [];
 
   const { endpoint, token } = getSonarConfig();
-
-  // Small concurrency limit (suppressed list should be small, but this is safer)
-  const CONCURRENCY = 5;
+  const concurrency = 5;
   const ids = customerIds.map(String);
 
   const results = [];
@@ -75,93 +125,74 @@ async function getCustomersByIds(customerIds = []) {
         });
 
         const entities = data?.accounts?.entities || [];
-        // Reuse existing normalizer for consistent output keys
         const rows = mapAccountEntitiesToRows(entities, "Suppressed");
 
-        // In practice accounts(id: X) should return 0 or 1 entity, but this is safe
         for (const row of rows) results.push(row);
       } catch (err) {
-        // If an ID no longer exists / Sonar errors for that account, skip it
-        // (Optional: console.warn here)
+        // If a suppressed account no longer exists in Sonar, just skip it.
       }
     }
   }
 
   const workers = Array.from(
-    { length: Math.min(CONCURRENCY, ids.length) },
-    () => worker()
+    { length: Math.min(concurrency, ids.length) },
+    () => worker(),
   );
   await Promise.all(workers);
 
-  // Keep stable ordering matching the suppression list
-  const order = new Map(ids.map((id, i) => [id, i]));
+  const order = new Map(ids.map((id, index) => [id, index]));
   results.sort(
-    (a, b) => (order.get(String(a.customerId)) ?? 0) - (order.get(String(b.customerId)) ?? 0)
+    (a, b) =>
+      (order.get(String(a.customerId)) ?? 0) -
+      (order.get(String(b.customerId)) ?? 0),
   );
 
   return results;
 }
 
-
-//Formats Sonar customer data into data for the web app below
 function mapAccountEntitiesToRows(entities, statusLabel) {
-  return (entities || []).map((a) => {
-    const id = a?.id;
-    const name = a?.name || "(unknown)";
+  return (entities || []).map((account) => {
+    const id = account?.id;
+    const name = account?.name || "(unknown)";
 
     const addressLines = uniqStrings(
-      a?.addresses?.entities?.map((x) => x?.line1),
+      account?.addresses?.entities?.map((address) => address?.line1),
     );
     const address = firstNonEmpty(addressLines);
 
     const ipAddresses = uniqStrings(
-      a?.ip_assignment_histories?.entities?.map((x) => x?.subnet),
+      account?.ip_assignment_histories?.entities?.map((assignment) => assignment?.subnet),
     );
 
     return {
       customerId: id,
       customerName: name,
       status: statusLabel,
-      deviceName: "—",
+      deviceName: "-",
       ipAddresses,
       address,
     };
   });
 }
 
-//Grabs down customers from Sonar then formats them
 async function getDownCustomers() {
-  const { endpoint, token, variables } = getSonarConfig();
-
-  const data = await sonarGraphqlRequest({
-    endpoint,
-    token,
-    query: DOWN_ACCOUNTS_QUERY,
-    variables,
-  });
-
+  const data = await runSonarQuery(DOWN_ACCOUNTS_QUERY, getCustomerQueryVariables());
   const entities = data?.accounts?.entities || [];
+
   return mapAccountEntitiesToRows(entities, "Down");
 }
 
-//Grabs warning customers from Sonar then formats them
 async function getWarningCustomers() {
-  const { endpoint, token, variables } = getSonarConfig();
-
-  const data = await sonarGraphqlRequest({
-    endpoint,
-    token,
-    query: WARNING_ACCOUNTS_QUERY,
-    variables,
-  });
-
+  const data = await runSonarQuery(WARNING_ACCOUNTS_QUERY, getCustomerQueryVariables());
   const entities = data?.accounts?.entities || [];
+
   return mapAccountEntitiesToRows(entities, "Warning");
 }
 
 module.exports = {
   getCustomerEquipmentSummary,
-  getDownCustomers,
-  getWarningCustomers,
   getCustomersByIds,
+  getDownCustomers,
+  getInfrastructureEquipmentSummary,
+  getWarningCustomers,
 };

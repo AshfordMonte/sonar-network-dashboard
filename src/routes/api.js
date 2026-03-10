@@ -2,9 +2,10 @@
 const express = require("express");
 const {
   getCustomerEquipmentSummary,
+  getCustomersByIds,
   getDownCustomers,
+  getInfrastructureEquipmentSummary,
   getWarningCustomers,
-  getCustomersByIds
 } = require("../services/sonarService");
 
 const { getSuppressedAccounts } = require("../services/suppressionStore");
@@ -13,20 +14,19 @@ const { getEnvInt } = require("../utils/env");
 const router = express.Router();
 const CACHE_TTL_MS = getEnvInt("CACHE_TTL_MS") ?? 60_000;
 
-// Simple helper cache factory
 function makeCache(ttlMs) {
   return { ttlMs, ts: 0, value: null };
 }
+
 function cacheFresh(cache) {
   return cache.value && Date.now() - cache.ts < cache.ttlMs;
 }
+
 function filterSuppressed(customers) {
   const suppressed = getSuppressedAccounts();
-  return customers.filter((c) => !suppressed.has(String(c.customerId)));
+  return customers.filter((customer) => !suppressed.has(String(customer.customerId)));
 }
 
-
-// ---- /api/status-summary ----
 const summaryCache = makeCache(CACHE_TTL_MS);
 
 router.get("/status-summary", async (req, res) => {
@@ -41,45 +41,42 @@ router.get("/status-summary", async (req, res) => {
 
     const suppressed = getSuppressedAccounts();
 
-    // pull raw lists
-    const [summary, downCustomers, warningCustomers] = await Promise.all([
-      getCustomerEquipmentSummary(),
-      getDownCustomers(),
-      getWarningCustomers(),
-    ]);
+    // Pull everything we need for the overview at the same time.
+    const [infrastructureSummary, customerSummary, downCustomers, warningCustomers] =
+      await Promise.all([
+        getInfrastructureEquipmentSummary(),
+        getCustomerEquipmentSummary(),
+        getDownCustomers(),
+        getWarningCustomers(),
+      ]);
 
-    // filter suppressed
     const visibleDown = downCustomers.filter(
-      (c) => !suppressed.has(String(c.customerId)),
+      (customer) => !suppressed.has(String(customer.customerId)),
     );
-
     const visibleWarning = warningCustomers.filter(
-      (c) => !suppressed.has(String(c.customerId)),
+      (customer) => !suppressed.has(String(customer.customerId)),
     );
 
-    // suppressed counts
     const suppressedDown = downCustomers.length - visibleDown.length;
     const suppressedWarning = warningCustomers.length - visibleWarning.length;
 
-    // total after suppression
     const visibleTotal =
-      summary.customerEquipment.total - suppressedDown - suppressedWarning;
+      customerSummary.customerEquipment.total - suppressedDown - suppressedWarning;
 
-    // rebuild counts
     const customerEquipment = {
       down: visibleDown.length,
       warning: visibleWarning.length,
-      uninventoried: summary.customerEquipment.uninventoried,
+      uninventoried: customerSummary.customerEquipment.uninventoried,
       good:
         visibleTotal -
         visibleDown.length -
         visibleWarning.length -
-        summary.customerEquipment.uninventoried,
+        customerSummary.customerEquipment.uninventoried,
       total: visibleTotal,
     };
 
     const payload = {
-      infrastructureEquipment: summary.infrastructureEquipment,
+      infrastructureEquipment: infrastructureSummary.infrastructureEquipment,
       customerEquipment,
       meta: {
         suppressed: {
@@ -100,14 +97,13 @@ router.get("/status-summary", async (req, res) => {
       source: "error",
       error: err.message,
       summary: {
-        infrastructureEquipment: { good: 0, warning: 0, bad: 0, down: 0 },
-        customerEquipment: { good: 0, warning: 0, bad: 0, down: 0, total: 0 },
+        infrastructureEquipment: { good: 0, warning: 0, uninventoried: 0, down: 0 },
+        customerEquipment: { good: 0, warning: 0, uninventoried: 0, down: 0, total: 0 },
       },
     });
   }
 });
 
-// ---- /api/down-customers ----
 const downCache = makeCache(CACHE_TTL_MS);
 
 router.get("/down-customers", async (req, res) => {
@@ -144,7 +140,6 @@ router.get("/down-customers", async (req, res) => {
   }
 });
 
-// ---- /api/warning-customers ----
 const warningCache = makeCache(CACHE_TTL_MS);
 
 router.get("/warning-customers", async (req, res) => {
@@ -181,7 +176,6 @@ router.get("/warning-customers", async (req, res) => {
   }
 });
 
-// ---- /api/suppressed-customers ----
 router.get("/suppressed-customers", async (req, res) => {
   try {
     const suppressed = [...getSuppressedAccounts()];
@@ -190,7 +184,7 @@ router.get("/suppressed-customers", async (req, res) => {
       return res.json({
         ok: true,
         source: "local",
-        customers: []
+        customers: [],
       });
     }
 
@@ -199,7 +193,7 @@ router.get("/suppressed-customers", async (req, res) => {
     res.json({
       ok: true,
       source: "sonar",
-      customers
+      customers,
     });
   } catch (err) {
     console.error("Suppressed customers error:", err);
@@ -207,11 +201,10 @@ router.get("/suppressed-customers", async (req, res) => {
       ok: false,
       source: "error",
       error: err.message,
-      customers: []
+      customers: [],
     });
   }
 });
-
 
 function clearCustomerCaches() {
   summaryCache.ts = 0;

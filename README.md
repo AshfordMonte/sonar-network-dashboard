@@ -5,8 +5,8 @@ It pulls data from **Sonar’s GraphQL API**, caches it server-side, and present
 
 ## What it does currently
 
-- Displays customer device statuses (Good / Warning / Down / Uninventoried)
-- Provides a detailed **Down customers** view (Warning page in progress)
+- Displays infrastructure and customer device statuses (Good / Warning / Down / Uninventoried)
+- Provides detailed customer status views, with infrastructure table hooks ready in the backend
 - Automatically proxies and caches Sonar GraphQL requests
 - Designed for LAN / internal NOC use
 

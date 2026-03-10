@@ -29,7 +29,7 @@ const ui = {
   infra: {
     good: el("infra-good"),
     warning: el("infra-warning"),
-    bad: el("infra-bad"),
+    uninventoried: el("infra-uninventoried"),
     down: el("infra-down"),
   },
   cust: {
@@ -81,7 +81,7 @@ function setLastUpdated(date = new Date()) {
 function render(summary) {
   ui.infra.good.textContent = fmt(summary?.infrastructureEquipment?.good);
   ui.infra.warning.textContent = fmt(summary?.infrastructureEquipment?.warning);
-  ui.infra.bad.textContent = fmt(summary?.infrastructureEquipment?.bad);
+  ui.infra.uninventoried.textContent = fmt(summary?.infrastructureEquipment?.uninventoried);
   ui.infra.down.textContent = fmt(summary?.infrastructureEquipment?.down);
 
   ui.cust.good.textContent = fmt(summary?.customerEquipment?.good);
@@ -96,8 +96,8 @@ function render(summary) {
  */
 function getMockSummary() {
   return {
-    infrastructureEquipment: { good: 71, warning: 0, bad: 0, down: 58 },
-    customerEquipment: { good: 1489, warning: 9, bad: 1, down: 71 },
+    infrastructureEquipment: { good: 71, warning: 0, uninventoried: 0, down: 58 },
+    customerEquipment: { good: 1489, warning: 9, uninventoried: 1, down: 71 },
   };
 }
 
