@@ -61,16 +61,15 @@ const CUSTOMER_EQUIPMENT_SUMMARY_QUERY = buildInventoryCountQuery({
   ...CUSTOMER_INVENTORY,
 });
 
-// Infrastructure dashboard tile counts.
-// Uninventoried is handled separately in JS because Sonar rejects duplicate
-// reverse relation filters on inventory_items for network_sites.
+// Site-level infrastructure counts kept here in case we want them later.
+// The overview currently uses equipment counts calculated from the snapshot below.
 const INFRASTRUCTURE_EQUIPMENT_SUMMARY_QUERY = buildInventoryCountQuery({
   queryName: "NetworkSiteInventoryCounts",
   ...INFRASTRUCTURE_INVENTORY,
 });
 
-// Full infrastructure snapshot used to calculate uninventoried sites in JS.
-// We only need a light set of fields here.
+// Full infrastructure snapshot used for equipment totals.
+// This gives us every inventory item so we can count actual equipment instead of sites.
 const INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY = buildEntityListQuery({
   queryName: "network_sites_inventory_snapshot",
   variables: INFRASTRUCTURE_INVENTORY.variables,

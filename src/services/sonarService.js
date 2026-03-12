@@ -7,7 +7,6 @@ const {
   ACCOUNT_BY_ID_QUERY,
   CUSTOMER_EQUIPMENT_SUMMARY_QUERY,
   DOWN_ACCOUNTS_QUERY,
-  INFRASTRUCTURE_EQUIPMENT_SUMMARY_QUERY,
   INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
   WARNING_ACCOUNTS_QUERY,
 } = require("../sonar/queries");
@@ -60,17 +59,39 @@ function mapInventoryCounts(data) {
   return { good, warning, uninventoried, down, total };
 }
 
-function isUninventoriedInfrastructureSite(site) {
-  const inventoryItems = site?.inventory_items?.entities || [];
+function getNormalizedInfrastructureStatus(item) {
+  return String(item?.icmp_device_status || "").trim().toUpperCase();
+}
 
-  // Empty sites do not count here.
-  // We only count sites that have inventory items and every status is blank/null.
-  if (!inventoryItems.length) return false;
+function summarizeInfrastructureEquipment(sites) {
+  const summary = {
+    good: 0,
+    warning: 0,
+    uninventoried: 0,
+    down: 0,
+    total: 0,
+  };
 
-  return inventoryItems.every((item) => {
-    const status = String(item?.icmp_device_status || "").trim();
-    return !status;
-  });
+  for (const site of sites || []) {
+    const inventoryItems = site?.inventory_items?.entities || [];
+
+    for (const item of inventoryItems) {
+      const status = getNormalizedInfrastructureStatus(item);
+      summary.total += 1;
+
+      if (status === "GOOD") {
+        summary.good += 1;
+      } else if (status === "WARNING") {
+        summary.warning += 1;
+      } else if (status === "DOWN") {
+        summary.down += 1;
+      } else {
+        summary.uninventoried += 1;
+      }
+    }
+  }
+
+  return summary;
 }
 
 async function getCustomerEquipmentSummary() {
@@ -83,22 +104,18 @@ async function getCustomerEquipmentSummary() {
 }
 
 async function getInfrastructureEquipmentSummary() {
-  const variables = getInfrastructureQueryVariables();
-  const [countData, snapshotData] = await Promise.all([
-    runSonarQuery(INFRASTRUCTURE_EQUIPMENT_SUMMARY_QUERY, variables),
-    runSonarQuery(INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY, variables),
-  ]);
+  const snapshotData = await runSonarQuery(
+    INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
+    getInfrastructureQueryVariables(),
+  );
 
-  const infrastructureEquipment = mapInventoryCounts(countData);
   const sites = snapshotData?.network_sites?.entities || [];
 
-  // Sonar gives us good/warning/down counts directly, but the null-only site
-  // case was easier and safer to calculate on our side.
-  infrastructureEquipment.uninventoried = sites.filter(
-    isUninventoriedInfrastructureSite,
-  ).length;
-
-  return { infrastructureEquipment };
+  // For infrastructure, the overview tiles should reflect equipment counts,
+  // not just how many sites matched a status.
+  return {
+    infrastructureEquipment: summarizeInfrastructureEquipment(sites),
+  };
 }
 
 async function getCustomersByIds(customerIds = []) {
