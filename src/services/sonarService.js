@@ -67,7 +67,7 @@ function summarizeInfrastructureEquipment(sites) {
   const summary = {
     good: 0,
     warning: 0,
-    uninventoried: 0,
+    unmonitored: 0,
     down: 0,
     total: 0,
   };
@@ -86,7 +86,7 @@ function summarizeInfrastructureEquipment(sites) {
       } else if (status === "DOWN") {
         summary.down += 1;
       } else {
-        summary.uninventoried += 1;
+        summary.unmonitored += 1;
       }
     }
   }

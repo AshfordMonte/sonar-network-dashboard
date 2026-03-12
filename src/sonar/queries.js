@@ -178,8 +178,8 @@ function buildInfrastructureSitesByStatusQuery(statusKey) {
   });
 }
 
-function buildInfrastructureUninventoriedSitesQuery() {
-  // Right now the same snapshot query is enough for uninventoried sites.
+function buildInfrastructureUnmonitoredSitesQuery() {
+  // Right now the same snapshot query is enough for unmonitored sites.
   // We can always swap this later if Sonar gives us a cleaner filter.
   return INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY;
 }
@@ -205,5 +205,5 @@ module.exports = {
   INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
   WARNING_ACCOUNTS_QUERY,
   buildInfrastructureSitesByStatusQuery,
-  buildInfrastructureUninventoriedSitesQuery,
+  buildInfrastructureUnmonitoredSitesQuery,
 };

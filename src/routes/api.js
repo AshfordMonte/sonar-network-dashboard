@@ -97,7 +97,7 @@ router.get("/status-summary", async (req, res) => {
       source: "error",
       error: err.message,
       summary: {
-        infrastructureEquipment: { good: 0, warning: 0, uninventoried: 0, down: 0 },
+        infrastructureEquipment: { good: 0, warning: 0, unmonitored: 0, down: 0 },
         customerEquipment: { good: 0, warning: 0, uninventoried: 0, down: 0, total: 0 },
       },
     });
