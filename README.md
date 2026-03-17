@@ -1,6 +1,6 @@
 # Sonar Network Dashboard
 
-Internal network status dashboard for ISP/WISP operations, built on **Node.js + Express** with a vanilla JS frontend.  
+This is an internal network status dashboard for ISP/WISP operations that use Sonar for customer and network management, built on **Node.js + Express** with a vanilla JS frontend.  
 It pulls data from **Sonar’s GraphQL API**, caches it server-side, and presents it in a user friendly format.
 
 ## What it does currently
