@@ -1,10 +1,13 @@
 const express = require("express");
 const {
   getSuppressedAccounts,
+  getSuppressedInfrastructureItems,
   suppressAccount,
-  unsuppressAccount
+  suppressInfrastructureItem,
+  unsuppressAccount,
+  unsuppressInfrastructureItem,
 } = require("../services/suppressionStore");
-const { clearCustomerCaches } = require("./api");
+const { clearCustomerCaches, clearInfrastructureCaches } = require("./api");
 
 const router = express.Router();
 
@@ -12,7 +15,8 @@ const router = express.Router();
 router.get("/", (req, res) => {
   res.json({
     ok: true,
-    accounts: [...getSuppressedAccounts()]
+    accounts: [...getSuppressedAccounts()],
+    infrastructureItems: [...getSuppressedInfrastructureItems()],
   });
 });
 
@@ -23,11 +27,22 @@ router.post("/accounts/:id", (req, res) => {
   res.json({ ok: true });
 });
 
-
 // Unsuppress account by ID and clear cached data.
 router.delete("/accounts/:id", (req, res) => {
   unsuppressAccount(req.params.id);
   clearCustomerCaches();
+  res.json({ ok: true });
+});
+
+router.post("/infrastructure-items/:id", (req, res) => {
+  suppressInfrastructureItem(req.params.id);
+  clearInfrastructureCaches();
+  res.json({ ok: true });
+});
+
+router.delete("/infrastructure-items/:id", (req, res) => {
+  unsuppressInfrastructureItem(req.params.id);
+  clearInfrastructureCaches();
   res.json({ ok: true });
 });
 

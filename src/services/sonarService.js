@@ -7,7 +7,9 @@ const {
   ACCOUNT_BY_ID_QUERY,
   CUSTOMER_EQUIPMENT_SUMMARY_QUERY,
   DOWN_ACCOUNTS_QUERY,
+  INFRASTRUCTURE_GOOD_TABLE_QUERY,
   INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
+  INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY,
   WARNING_ACCOUNTS_QUERY,
 } = require("../sonar/queries");
 
@@ -63,7 +65,14 @@ function getNormalizedInfrastructureStatus(item) {
   return String(item?.icmp_device_status || "").trim().toUpperCase();
 }
 
-function summarizeInfrastructureEquipment(sites) {
+function getInfrastructureStatusLabel(status) {
+  if (status === "GOOD") return "Good";
+  if (status === "WARNING") return "Warning";
+  if (status === "DOWN") return "Down";
+  return "Unmonitored";
+}
+
+function summarizeInfrastructureEquipment(sites, suppressedItemIds = new Set()) {
   const summary = {
     good: 0,
     warning: 0,
@@ -76,6 +85,12 @@ function summarizeInfrastructureEquipment(sites) {
     const inventoryItems = site?.inventory_items?.entities || [];
 
     for (const item of inventoryItems) {
+      const itemId = String(item?.id || "").trim();
+
+      if (itemId && suppressedItemIds.has(itemId)) {
+        continue;
+      }
+
       const status = getNormalizedInfrastructureStatus(item);
       summary.total += 1;
 
@@ -94,6 +109,102 @@ function summarizeInfrastructureEquipment(sites) {
   return summary;
 }
 
+function compareInfrastructureRows(a, b) {
+  return (
+    String(a.networkSiteName || "").localeCompare(String(b.networkSiteName || ""), "en", {
+      sensitivity: "base",
+    }) ||
+    String(a.deviceName || "").localeCompare(String(b.deviceName || ""), "en", {
+      sensitivity: "base",
+    }) ||
+    String((a.ipAddresses || [])[0] || "").localeCompare(
+      String((b.ipAddresses || [])[0] || ""),
+      "en",
+      { sensitivity: "base" },
+    )
+  );
+}
+
+function buildMissingSuppressedInfrastructureRow(itemId) {
+  return {
+    inventoryItemId: itemId,
+    deviceName: "(not found in current snapshot)",
+    status: "Suppressed",
+    ipAddresses: [],
+    networkSiteId: null,
+    networkSiteName: "-",
+  };
+}
+
+// Sonar exposes infrastructure IP assignments through InventoryModelFieldData,
+// so we flatten that relation into table rows keyed by inventory item ID.
+function mapInfrastructureRows(
+  sites,
+  {
+    desiredStatus = null,
+    excludedItemIds = new Set(),
+    includedItemIds = null,
+  } = {},
+) {
+  const rowsByItemId = new Map();
+
+  for (const site of sites || []) {
+    const histories = site?.ip_assignment_histories?.entities || [];
+
+    for (const history of histories) {
+      if (history?.removed_datetime) {
+        continue;
+      }
+
+      const assignable = history?.ipassignmentable;
+
+      if (assignable?.__typename !== "InventoryModelFieldData") {
+        continue;
+      }
+
+      const item = assignable?.inventory_item;
+      const itemId = String(assignable?.inventory_item_id || item?.id || "").trim();
+
+      if (!itemId) {
+        continue;
+      }
+
+      if (includedItemIds && !includedItemIds.has(itemId)) {
+        continue;
+      }
+
+      if (excludedItemIds.has(itemId)) {
+        continue;
+      }
+
+      const status = getNormalizedInfrastructureStatus(item);
+
+      if (desiredStatus && status !== desiredStatus) {
+        continue;
+      }
+
+      const existing = rowsByItemId.get(itemId);
+
+      if (existing) {
+        existing.ipAddresses = uniqStrings([...existing.ipAddresses, history?.subnet]);
+        continue;
+      }
+
+      rowsByItemId.set(itemId, {
+        inventoryItemId: itemId,
+        deviceName:
+          firstNonEmpty([history?.description, item?.inventory_model?.name]) || "(unknown)",
+        status: getInfrastructureStatusLabel(status),
+        ipAddresses: uniqStrings([history?.subnet]),
+        networkSiteId: site?.id || null,
+        networkSiteName: site?.name || "(unknown)",
+      });
+    }
+  }
+
+  return [...rowsByItemId.values()].sort(compareInfrastructureRows);
+}
+
 async function getCustomerEquipmentSummary() {
   const data = await runSonarQuery(
     CUSTOMER_EQUIPMENT_SUMMARY_QUERY,
@@ -103,7 +214,7 @@ async function getCustomerEquipmentSummary() {
   return { customerEquipment: mapInventoryCounts(data) };
 }
 
-async function getInfrastructureEquipmentSummary() {
+async function getInfrastructureEquipmentSummary({ suppressedItemIds = new Set() } = {}) {
   const snapshotData = await runSonarQuery(
     INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
     getInfrastructureQueryVariables(),
@@ -114,8 +225,49 @@ async function getInfrastructureEquipmentSummary() {
   // For infrastructure, the overview tiles should reflect equipment counts,
   // not just how many sites matched a status.
   return {
-    infrastructureEquipment: summarizeInfrastructureEquipment(sites),
+    infrastructureEquipment: summarizeInfrastructureEquipment(sites, suppressedItemIds),
   };
+}
+
+async function getInfrastructureGoodRows({ suppressedItemIds = new Set() } = {}) {
+  const data = await runSonarQuery(
+    INFRASTRUCTURE_GOOD_TABLE_QUERY,
+    getInfrastructureQueryVariables(),
+  );
+
+  const sites = data?.network_sites?.entities || [];
+
+  return mapInfrastructureRows(sites, {
+    desiredStatus: "GOOD",
+    excludedItemIds: suppressedItemIds,
+  });
+}
+
+async function getSuppressedInfrastructureRows({ suppressedItemIds = new Set() } = {}) {
+  if (!suppressedItemIds.size) return [];
+
+  const data = await runSonarQuery(
+    INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY,
+    getInfrastructureQueryVariables(),
+  );
+
+  const sites = data?.network_sites?.entities || [];
+
+  const rows = mapInfrastructureRows(sites, {
+    includedItemIds: suppressedItemIds,
+  });
+
+  const seenItemIds = new Set(rows.map((row) => String(row.inventoryItemId)));
+
+  // Keep suppressed IDs visible even if Sonar no longer returns a current
+  // IP assignment row for them, so the UI can still offer an unsuppress action.
+  for (const itemId of suppressedItemIds) {
+    const normalizedId = String(itemId);
+    if (seenItemIds.has(normalizedId)) continue;
+    rows.push(buildMissingSuppressedInfrastructureRow(normalizedId));
+  }
+
+  return rows.sort(compareInfrastructureRows);
 }
 
 async function getCustomersByIds(customerIds = []) {
@@ -211,5 +363,7 @@ module.exports = {
   getCustomersByIds,
   getDownCustomers,
   getInfrastructureEquipmentSummary,
+  getInfrastructureGoodRows,
+  getSuppressedInfrastructureRows,
   getWarningCustomers,
 };

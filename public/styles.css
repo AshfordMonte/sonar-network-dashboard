@@ -339,6 +339,17 @@ body{
   color: white;
 }
 
+.badge--good{
+  background: rgba(85,197,122,0.95);
+  color: white;
+}
+
+.badge--neutral{
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.88);
+  border: 1px solid rgba(255,255,255,0.14);
+}
+
 .badge--warning{
   background: rgba(242,201,76,0.95); /* --yellow */
   color: rgba(0,0,0,0.85);

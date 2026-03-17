@@ -5,10 +5,15 @@ const {
   getCustomersByIds,
   getDownCustomers,
   getInfrastructureEquipmentSummary,
+  getInfrastructureGoodRows,
+  getSuppressedInfrastructureRows,
   getWarningCustomers,
 } = require("../services/sonarService");
 
-const { getSuppressedAccounts } = require("../services/suppressionStore");
+const {
+  getSuppressedAccounts,
+  getSuppressedInfrastructureItems,
+} = require("../services/suppressionStore");
 const { getEnvInt } = require("../utils/env");
 
 const router = express.Router();
@@ -40,11 +45,14 @@ router.get("/status-summary", async (req, res) => {
     }
 
     const suppressed = getSuppressedAccounts();
+    const suppressedInfrastructureItems = getSuppressedInfrastructureItems();
 
     // Pull everything we need for the overview at the same time.
     const [infrastructureSummary, customerSummary, downCustomers, warningCustomers] =
       await Promise.all([
-        getInfrastructureEquipmentSummary(),
+        getInfrastructureEquipmentSummary({
+          suppressedItemIds: suppressedInfrastructureItems,
+        }),
         getCustomerEquipmentSummary(),
         getDownCustomers(),
         getWarningCustomers(),
@@ -97,7 +105,7 @@ router.get("/status-summary", async (req, res) => {
       source: "error",
       error: err.message,
       summary: {
-        infrastructureEquipment: { good: 0, warning: 0, unmonitored: 0, down: 0 },
+        infrastructureEquipment: { good: 0, warning: 0, unmonitored: 0, down: 0, total: 0 },
         customerEquipment: { good: 0, warning: 0, uninventoried: 0, down: 0, total: 0 },
       },
     });
@@ -141,6 +149,8 @@ router.get("/down-customers", async (req, res) => {
 });
 
 const warningCache = makeCache(CACHE_TTL_MS);
+const infrastructureGoodCache = makeCache(CACHE_TTL_MS);
+const suppressedInfrastructureCache = makeCache(CACHE_TTL_MS);
 
 router.get("/warning-customers", async (req, res) => {
   try {
@@ -176,6 +186,44 @@ router.get("/warning-customers", async (req, res) => {
   }
 });
 
+router.get("/infrastructure-good", async (req, res) => {
+  try {
+    if (cacheFresh(infrastructureGoodCache)) {
+      return res.json({
+        ok: true,
+        source: "cache",
+        rows: infrastructureGoodCache.value,
+      });
+    }
+
+    const suppressedInfrastructureItems = getSuppressedInfrastructureItems();
+    const rows = await getInfrastructureGoodRows({
+      suppressedItemIds: suppressedInfrastructureItems,
+    });
+
+    infrastructureGoodCache.ts = Date.now();
+    infrastructureGoodCache.value = rows;
+
+    res.json({
+      ok: true,
+      source: "sonar",
+      rows,
+      meta: {
+        visible: rows.length,
+        suppressed: suppressedInfrastructureItems.size,
+      },
+    });
+  } catch (err) {
+    console.error("Infrastructure good rows error:", err);
+    res.status(200).json({
+      ok: false,
+      source: "error",
+      error: err.message,
+      rows: [],
+    });
+  }
+});
+
 router.get("/suppressed-customers", async (req, res) => {
   try {
     const suppressed = [...getSuppressedAccounts()];
@@ -206,13 +254,69 @@ router.get("/suppressed-customers", async (req, res) => {
   }
 });
 
+router.get("/suppressed-infrastructure", async (req, res) => {
+  try {
+    if (cacheFresh(suppressedInfrastructureCache)) {
+      return res.json({
+        ok: true,
+        source: "cache",
+        rows: suppressedInfrastructureCache.value,
+      });
+    }
+
+    const suppressedInfrastructureItems = getSuppressedInfrastructureItems();
+
+    if (!suppressedInfrastructureItems.size) {
+      return res.json({
+        ok: true,
+        source: "local",
+        rows: [],
+      });
+    }
+
+    // Rehydrate suppressed inventory item IDs back into table rows so the UI
+    // can show context and offer unsuppress actions.
+    const rows = await getSuppressedInfrastructureRows({
+      suppressedItemIds: suppressedInfrastructureItems,
+    });
+
+    suppressedInfrastructureCache.ts = Date.now();
+    suppressedInfrastructureCache.value = rows;
+
+    res.json({
+      ok: true,
+      source: "sonar",
+      rows,
+      meta: {
+        stored: suppressedInfrastructureItems.size,
+        visible: rows.length,
+      },
+    });
+  } catch (err) {
+    console.error("Suppressed infrastructure error:", err);
+    res.status(200).json({
+      ok: false,
+      source: "error",
+      error: err.message,
+      rows: [],
+    });
+  }
+});
+
 function clearCustomerCaches() {
   summaryCache.ts = 0;
   downCache.ts = 0;
   warningCache.ts = 0;
 }
 
+function clearInfrastructureCaches() {
+  summaryCache.ts = 0;
+  infrastructureGoodCache.ts = 0;
+  suppressedInfrastructureCache.ts = 0;
+}
+
 module.exports = {
+  clearInfrastructureCaches,
   router,
   clearCustomerCaches,
 };

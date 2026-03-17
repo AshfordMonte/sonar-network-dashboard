@@ -158,6 +158,87 @@ entities {
 `;
 }
 
+// GOOD table rows come from the IP assignment side so we can show the
+// device description plus the current live IP for each infrastructure item.
+const INFRASTRUCTURE_GOOD_TABLE_QUERY = buildInventoryStatusListQuery({
+  queryName: "network_sites_good_table",
+  variables: INFRASTRUCTURE_INVENTORY.variables,
+  entityName: INFRASTRUCTURE_INVENTORY.entityName,
+  baseArgs: INFRASTRUCTURE_INVENTORY.baseArgs,
+  relationPath: INFRASTRUCTURE_INVENTORY.relationPath,
+  statusField: INFRASTRUCTURE_INVENTORY.statusField,
+  statusValue: INFRASTRUCTURE_INVENTORY.statuses.good,
+  paginator: { page: 1, records_per_page: 10000 },
+  entitySelection: `
+entities {
+  id
+  name
+  ip_assignment_histories {
+    entities {
+      id
+      description
+      subnet
+      removed_datetime
+      ipassignmentable {
+        __typename
+        ... on InventoryModelFieldData {
+          id
+          inventory_item_id
+          inventory_item {
+            id
+            icmp_device_status
+            inventory_model {
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`,
+});
+
+// Broader snapshot used when we need to resolve suppressed infrastructure rows
+// by inventory item ID, regardless of their current status.
+const INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY = buildEntityListQuery({
+  queryName: "network_sites_table_snapshot",
+  variables: INFRASTRUCTURE_INVENTORY.variables,
+  entityName: INFRASTRUCTURE_INVENTORY.entityName,
+  args: {
+    ...INFRASTRUCTURE_INVENTORY.baseArgs,
+    paginator: { page: 1, records_per_page: 10000 },
+  },
+  entitySelection: `
+entities {
+  id
+  name
+  ip_assignment_histories {
+    entities {
+      id
+      description
+      subnet
+      removed_datetime
+      ipassignmentable {
+        __typename
+        ... on InventoryModelFieldData {
+          id
+          inventory_item_id
+          inventory_item {
+            id
+            icmp_device_status
+            inventory_model {
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`,
+});
+
 function buildInfrastructureSitesByStatusQuery(statusKey) {
   const statusValue = INFRASTRUCTURE_INVENTORY.statuses[statusKey];
 
@@ -202,7 +283,9 @@ module.exports = {
   CUSTOMER_EQUIPMENT_SUMMARY_QUERY,
   DOWN_ACCOUNTS_QUERY,
   INFRASTRUCTURE_EQUIPMENT_SUMMARY_QUERY,
+  INFRASTRUCTURE_GOOD_TABLE_QUERY,
   INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
+  INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY,
   WARNING_ACCOUNTS_QUERY,
   buildInfrastructureSitesByStatusQuery,
   buildInfrastructureUnmonitoredSitesQuery,
