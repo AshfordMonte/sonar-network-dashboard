@@ -19,14 +19,17 @@ const { getEnvInt } = require("../utils/env");
 const router = express.Router();
 const CACHE_TTL_MS = getEnvInt("CACHE_TTL_MS") ?? 60_000;
 
+// Creates a simple in-memory cache record for one endpoint.
 function makeCache(ttlMs) {
   return { ttlMs, ts: 0, value: null };
 }
 
+// Checks whether a cache entry is still valid.
 function cacheFresh(cache) {
   return cache.value && Date.now() - cache.ts < cache.ttlMs;
 }
 
+// Removes suppressed customers from a customer row list.
 function filterSuppressed(customers) {
   const suppressed = getSuppressedAccounts();
   return customers.filter((customer) => !suppressed.has(String(customer.customerId)));
@@ -303,12 +306,14 @@ router.get("/suppressed-infrastructure", async (req, res) => {
   }
 });
 
+// Clears cached customer responses after suppression changes.
 function clearCustomerCaches() {
   summaryCache.ts = 0;
   downCache.ts = 0;
   warningCache.ts = 0;
 }
 
+// Clears cached infrastructure responses after suppression changes.
 function clearInfrastructureCaches() {
   summaryCache.ts = 0;
   infrastructureGoodCache.ts = 0;

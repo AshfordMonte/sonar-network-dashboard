@@ -11,6 +11,7 @@ const INFRASTRUCTURE_DATA_PATH = path.resolve(
 let suppressedAccounts = new Set();
 let suppressedInfrastructureItems = new Set();
 
+// Creates a suppression file on first run when it does not exist yet.
 function ensureJsonFile(filePath, initialValue) {
   if (!fs.existsSync(filePath)) {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -26,6 +27,7 @@ function loadAccounts() {
   suppressedAccounts = new Set((raw.accounts || []).map(String));
 }
 
+// Loads infrastructure suppressions from disk into memory.
 function loadInfrastructureItems() {
   ensureJsonFile(INFRASTRUCTURE_DATA_PATH, { inventoryItems: [] });
 
@@ -34,6 +36,7 @@ function loadInfrastructureItems() {
 }
 
 // Persist the in-memory sets back to disk.
+// Saves customer suppressions to disk.
 function saveAccounts() {
   fs.writeFileSync(
     ACCOUNTS_DATA_PATH,
@@ -41,6 +44,7 @@ function saveAccounts() {
   );
 }
 
+// Saves infrastructure suppressions to disk.
 function saveInfrastructureItems() {
   fs.writeFileSync(
     INFRASTRUCTURE_DATA_PATH,
@@ -49,10 +53,12 @@ function saveInfrastructureItems() {
 }
 
 // Return the live suppression set.
+// Returns the live set of suppressed customer IDs.
 function getSuppressedAccounts() {
   return suppressedAccounts;
 }
 
+// Returns the live set of suppressed infrastructure item IDs.
 function getSuppressedInfrastructureItems() {
   return suppressedInfrastructureItems;
 }
@@ -69,6 +75,7 @@ function unsuppressAccount(id) {
   saveAccounts();
 }
 
+// Adds an infrastructure inventory item to the suppression list.
 function suppressInfrastructureItem(id) {
   // Infrastructure suppressions are keyed by inventory item ID so the table
   // rows and overview counts stay aligned.
@@ -76,6 +83,7 @@ function suppressInfrastructureItem(id) {
   saveInfrastructureItems();
 }
 
+// Removes an infrastructure inventory item from the suppression list.
 function unsuppressInfrastructureItem(id) {
   suppressedInfrastructureItems.delete(String(id));
   saveInfrastructureItems();

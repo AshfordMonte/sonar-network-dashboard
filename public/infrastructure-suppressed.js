@@ -25,6 +25,7 @@ const ui = {
   lastUpdated: el("last-updated"),
 };
 
+// Updates the footer API indicator for the current page state.
 function setApiState(state, message) {
   ui.apiDot.classList.remove("status__dot--ok", "status__dot--bad");
   if (state === "ok") ui.apiDot.classList.add("status__dot--ok");
@@ -32,23 +33,28 @@ function setApiState(state, message) {
   ui.apiStatus.textContent = message;
 }
 
+// Refreshes the footer timestamp after each data load.
 function setLastUpdated(date = new Date()) {
   ui.lastUpdated.textContent = `Last updated: ${date.toLocaleString()}`;
 }
 
+// Builds the Sonar URL for a network site detail page.
 function buildSonarSiteUrl(siteId) {
   return `https://wi-fiber.sonar.software/app#/network/sites/show/${encodeURIComponent(siteId)}`;
 }
 
+// Normalizes values for case-insensitive filtering.
 function normalize(s) {
   return String(s ?? "").toLowerCase();
 }
 
+// Joins a device's IP list for display in one table cell.
 function joinIps(ipAddresses) {
   if (!Array.isArray(ipAddresses)) return "";
   return ipAddresses.filter(Boolean).join(", ");
 }
 
+// Maps row statuses to the badge styles used in the table.
 function getStatusBadgeClass(status) {
   const normalized = normalize(status);
   if (normalized === "good") return "badge--good";
@@ -57,6 +63,7 @@ function getStatusBadgeClass(status) {
   return "badge--neutral";
 }
 
+// Renders the visible suppressed infrastructure rows into the table.
 function renderTable(rows) {
   ui.rows.innerHTML = "";
 
@@ -115,6 +122,7 @@ function renderTable(rows) {
   ui.rows.appendChild(frag);
 }
 
+// Fetches suppressed infrastructure rows from the backend.
 async function fetchSuppressedInfrastructureRows() {
   const res = await fetch("/api/suppressed-infrastructure", { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -123,6 +131,7 @@ async function fetchSuppressedInfrastructureRows() {
 
 let lastRows = [];
 
+// Applies the current text filter to the last fetched row set.
 function applyFilter() {
   const q = normalize(ui.filter.value);
 
@@ -147,6 +156,7 @@ function applyFilter() {
   renderTable(filtered);
 }
 
+// Reloads the table data and updates the page status chrome.
 async function refresh() {
   try {
     const payload = await fetchSuppressedInfrastructureRows();
@@ -167,6 +177,7 @@ async function refresh() {
   }
 }
 
+// Wires up page events and starts the refresh loop.
 async function init() {
   ui.filter.addEventListener("input", applyFilter);
   await refresh();

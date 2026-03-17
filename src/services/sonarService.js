@@ -13,6 +13,7 @@ const {
   WARNING_ACCOUNTS_QUERY,
 } = require("../sonar/queries");
 
+// Loads the Sonar connection settings and shared query variables.
 function getSonarConfig() {
   const endpoint = requireEnv("SONAR_ENDPOINT");
   const token = requireEnv("SONAR_TOKEN");
@@ -42,15 +43,18 @@ async function runSonarQuery(query, variables) {
   });
 }
 
+// Returns the variable set used by account-scoped queries.
 function getCustomerQueryVariables() {
   return getSonarConfig().variables;
 }
 
+// Returns the variable set used by network-site queries.
 function getInfrastructureQueryVariables() {
   const { companyId } = getSonarConfig().variables;
   return { companyId };
 }
 
+// Normalizes GraphQL count results into the dashboard summary shape.
 function mapInventoryCounts(data) {
   const total = pickCount(data.total);
   const good = pickCount(data.good);
@@ -61,10 +65,12 @@ function mapInventoryCounts(data) {
   return { good, warning, uninventoried, down, total };
 }
 
+// Normalizes infrastructure status values for consistent comparisons.
 function getNormalizedInfrastructureStatus(item) {
   return String(item?.icmp_device_status || "").trim().toUpperCase();
 }
 
+// Converts infrastructure status codes into UI-friendly labels.
 function getInfrastructureStatusLabel(status) {
   if (status === "GOOD") return "Good";
   if (status === "WARNING") return "Warning";
@@ -72,6 +78,7 @@ function getInfrastructureStatusLabel(status) {
   return "Unmonitored";
 }
 
+// Totals infrastructure equipment counts while excluding suppressed items.
 function summarizeInfrastructureEquipment(sites, suppressedItemIds = new Set()) {
   const summary = {
     good: 0,
@@ -109,6 +116,7 @@ function summarizeInfrastructureEquipment(sites, suppressedItemIds = new Set()) 
   return summary;
 }
 
+// Sorts infrastructure rows so tables stay stable between refreshes.
 function compareInfrastructureRows(a, b) {
   return (
     String(a.networkSiteName || "").localeCompare(String(b.networkSiteName || ""), "en", {
@@ -125,6 +133,7 @@ function compareInfrastructureRows(a, b) {
   );
 }
 
+// Builds a fallback row for suppressed devices missing from the current snapshot.
 function buildMissingSuppressedInfrastructureRow(itemId) {
   return {
     inventoryItemId: itemId,
@@ -205,6 +214,7 @@ function mapInfrastructureRows(
   return [...rowsByItemId.values()].sort(compareInfrastructureRows);
 }
 
+// Fetches the customer equipment summary used on the overview page.
 async function getCustomerEquipmentSummary() {
   const data = await runSonarQuery(
     CUSTOMER_EQUIPMENT_SUMMARY_QUERY,
@@ -214,6 +224,7 @@ async function getCustomerEquipmentSummary() {
   return { customerEquipment: mapInventoryCounts(data) };
 }
 
+// Fetches the infrastructure equipment summary used on the overview page.
 async function getInfrastructureEquipmentSummary({ suppressedItemIds = new Set() } = {}) {
   const snapshotData = await runSonarQuery(
     INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
@@ -229,6 +240,7 @@ async function getInfrastructureEquipmentSummary({ suppressedItemIds = new Set()
   };
 }
 
+// Returns visible GOOD infrastructure rows for the detail table.
 async function getInfrastructureGoodRows({ suppressedItemIds = new Set() } = {}) {
   const data = await runSonarQuery(
     INFRASTRUCTURE_GOOD_TABLE_QUERY,
@@ -243,6 +255,7 @@ async function getInfrastructureGoodRows({ suppressedItemIds = new Set() } = {})
   });
 }
 
+// Rehydrates suppressed infrastructure IDs back into table rows.
 async function getSuppressedInfrastructureRows({ suppressedItemIds = new Set() } = {}) {
   if (!suppressedItemIds.size) return [];
 
@@ -270,6 +283,7 @@ async function getSuppressedInfrastructureRows({ suppressedItemIds = new Set() }
   return rows.sort(compareInfrastructureRows);
 }
 
+// Resolves a list of suppressed customer IDs back into display rows.
 async function getCustomersByIds(customerIds = []) {
   if (!customerIds.length) return [];
 
@@ -319,6 +333,7 @@ async function getCustomersByIds(customerIds = []) {
   return results;
 }
 
+// Converts Sonar account entities into the table row shape used by the UI.
 function mapAccountEntitiesToRows(entities, statusLabel) {
   return (entities || []).map((account) => {
     const id = account?.id;
@@ -344,6 +359,7 @@ function mapAccountEntitiesToRows(entities, statusLabel) {
   });
 }
 
+// Returns visible Down customer rows for the customer detail page.
 async function getDownCustomers() {
   const data = await runSonarQuery(DOWN_ACCOUNTS_QUERY, getCustomerQueryVariables());
   const entities = data?.accounts?.entities || [];
@@ -351,6 +367,7 @@ async function getDownCustomers() {
   return mapAccountEntitiesToRows(entities, "Down");
 }
 
+// Returns visible Warning customer rows for the customer detail page.
 async function getWarningCustomers() {
   const data = await runSonarQuery(WARNING_ACCOUNTS_QUERY, getCustomerQueryVariables());
   const entities = data?.accounts?.entities || [];

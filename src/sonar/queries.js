@@ -131,6 +131,7 @@ entities {
 `,
 });
 
+// Builds the selection block used by site-scoped infrastructure status views.
 function buildInfrastructureEntitySelection(statusValue) {
   // For infrastructure detail pages, we want the site name plus only the
   // inventory items that match the chosen status.
@@ -239,6 +240,7 @@ entities {
 `,
 });
 
+// Builds a network-site query for one infrastructure status bucket.
 function buildInfrastructureSitesByStatusQuery(statusKey) {
   const statusValue = INFRASTRUCTURE_INVENTORY.statuses[statusKey];
 
@@ -259,6 +261,7 @@ function buildInfrastructureSitesByStatusQuery(statusKey) {
   });
 }
 
+// Returns the snapshot query used to derive unmonitored infrastructure rows.
 function buildInfrastructureUnmonitoredSitesQuery() {
   // Right now the same snapshot query is enough for unmonitored sites.
   // We can always swap this later if Sonar gives us a cleaner filter.
