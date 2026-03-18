@@ -66,13 +66,13 @@ network-dashboard/
 
 ## Setup
 Clone the repository into a folder via Bash terminal
-```text
+```bash
 git clone https://github.com/AshfordMonte/sonar-network-dashboard.git .
 ```
 
 Open the .env.example file and fill in the necessary data from your Sonar instance.
 
-```text
+```bash
 # Server
 PORT=3000      # This can be any free port on the device
 CACHE_TTL_MS=60000 # Cache duration for Sonar API responses (milliseconds)
@@ -83,10 +83,15 @@ SONAR_TOKEN=replace_me    # Replace with Personal Access Token generated in your
 SONAR_COMPANY_ID=0      # Located at Settings > Company > Companies
 SONAR_ACCOUNT_STATUS_ID=0 # ID for customer Account Status listed as "Active - Company Name"
 ```
-Run the following commands in bash to install necessary packages, rename to .env, and start the web server.
+This dashboard assumes you already have a working Sonar poller in your network, and it is set to monitor the respective subnets in use.
+
+Ensure that the network site and customer inventory item models are included in a Network Monitoring Template. These can be found in Settings > Monitoring > Network Monitoring Templates.
+
+Run the following commands in bash to install necessary packages, remove example file names, and start the web server.
 ```bash
 npm install
 cp .env.example .env
+cp ./data/suppressions.example.json ./data/suppressions.json && cp ./data/infrastructure-suppressions.example.json ./data/infrastructure-suppressions.json
 npm start
 ```
 The server binds to all host IPv4 addresses by default for LAN access.
