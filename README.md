@@ -6,63 +6,9 @@ It pulls data from **Sonar’s GraphQL API**, caches it server-side, and present
 ## What it does currently
 
 - Displays infrastructure and customer device statuses (Good / Warning / Down / Uninventoried)
-- Provides detailed customer status views, with infrastructure table hooks ready in the backend
+- Provides customer and infrastructure equipment ICMP status views and total counts
 - Automatically proxies and caches Sonar GraphQL requests
-- Designed for LAN / internal NOC use
-
-## Tech Stack
-
-- **Backend:** Node.js, Express
-- **Frontend:** Vanilla HTML, CSS, JavaScript  
-- **Data:** Sonar GraphQL API
-
-## Project Structure
-
-```text
-network-dashboard/
-├─ data/
-│  └─ suppressions.json        # Persistent suppression store (shared across users)
-│
-├─ public/                     # Frontend (served statically)
-│  ├─ index.html               # Main dashboard
-│  ├─ app.js                   # Dashboard client logic
-│  ├─ styles.css               # Global UI styles
-│  │
-│  ├─ down.html                # Down customers page
-│  ├─ down.js                  # Down customers table logic
-│  │
-│  ├─ warning.html             # Warning customers page
-│  ├─ warning.js               # Warning customers table logic
-│  │
-│  ├─ suppressed.html          # Suppressed customers page
-│  └─ suppressed.js            # Suppressed customers logic (unsuppress actions)
-│
-├─ src/                        # Server-side logic
-│  ├─ routes/
-│  │  ├─ api.js                # Core API endpoints (summary, down, warning, suppressed)
-│  │  └─ suppressions.js       # Suppression CRUD endpoints
-│  │
-│  ├─ services/
-│  │  ├─ sonarService.js       # Sonar data access + data normalization
-│  │  └─ suppressionStore.js   # JSON-backed suppression persistence
-│  │
-│  ├─ sonar/
-│  │  └─ queries.js            # Centralized Sonar GraphQL queries
-│  │
-│  └─ utils/
-│     ├─ env.js                # Environment variable validation
-│     ├─ network.js            # Detects host LAN IP addresses
-│     └─ normalize.js          # Shared data normalization helpers
-│
-├─ .env                        # Local environment configuration
-├─ .env.example                # Example environment file
-├─ .gitignore
-├─ package.json
-├─ package-lock.json
-├─ server.js                   # Express application entry point
-├─ sonarClient.js              # Sonar GraphQL client wrapper
-└─ README.md
-```
+- Designed for LAN use only
 
 ## Setup
 Clone the repository into a folder via Bash terminal
@@ -95,3 +41,70 @@ cp ./data/suppressions.example.json ./data/suppressions.json && cp ./data/infras
 npm start
 ```
 The server binds to all host IPv4 addresses by default for LAN access.
+
+## Tech Stack
+
+- **Backend:** Node.js, Express
+- **Frontend:** Vanilla HTML, CSS, JavaScript  
+- **Data:** Sonar GraphQL API
+
+## Project Structure
+
+```text
+sonar-network-dashboard/
+|-- data/
+|   |-- infrastructure-suppressions.example.json  # Example infrastructure suppression store
+|   |-- infrastructure-suppressions.json          # Live infrastructure suppression store
+|   |-- suppressions.example.json                 # Example customer suppression store
+|   `-- suppressions.json                         # Live customer suppression store
+|
+|-- public/                         # Frontend (served statically)
+|   |-- index.html                  # Main dashboard
+|   |-- app.js                      # Dashboard client logic
+|   |-- styles.css                  # Global UI styles
+|   |-- refresh-config.js           # Client refresh interval config
+|   |-- hc-wireless-logo.avif       # Dashboard header branding
+|   |
+|   |-- down.html                   # Down customers page
+|   |-- down.js                     # Down customers table logic
+|   |-- warning.html                # Warning customers page
+|   |-- warning.js                  # Warning customers table logic
+|   |-- suppressed.html             # Suppressed customers page
+|   `-- suppressed.js               # Suppressed customers logic
+|   |
+|   |-- infrastructure-good.html       # Good infrastructure page
+|   |-- infrastructure-good.js         # Good infrastructure table logic
+|   |-- infrastructure-down.html       # Down infrastructure page
+|   |-- infrastructure-down.js         # Down infrastructure table logic
+|   |-- infrastructure-unmonitored.html # Unmonitored infrastructure page
+|   |-- infrastructure-unmonitored.js   # Unmonitored infrastructure table logic
+|   |-- infrastructure-suppressed.html  # Suppressed infrastructure page
+|   `-- infrastructure-suppressed.js    # Suppressed infrastructure logic
+|
+|-- src/                            # Server-side logic
+|   |-- routes/
+|   |   |-- api.js                  # Summary and table API endpoints
+|   |   `-- suppressions.js         # Suppression CRUD endpoints
+|   |
+|   |-- services/
+|   |   |-- sonarService.js         # Sonar data access + row shaping
+|   |   `-- suppressionStore.js     # JSON-backed suppression persistence
+|   |
+|   |-- sonar/
+|   |   |-- inventoryQueryBuilder.js   # Shared GraphQL query builder helpers
+|   |   `-- queries.js              # Centralized Sonar GraphQL queries
+|   |
+|   `-- utils/
+|       |-- env.js                  # Environment variable validation
+|       |-- network.js              # Detects host LAN IP addresses
+|       `-- normalize.js            # Shared normalization helpers
+|
+|-- .env                            # Local environment configuration
+|-- .env.example                    # Example environment file
+|-- .gitignore
+|-- package.json
+|-- package-lock.json
+|-- server.js                       # Express application entry point
+|-- sonarClient.js                  # Sonar GraphQL client wrapper
+`-- README.md
+```
