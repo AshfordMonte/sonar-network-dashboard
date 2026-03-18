@@ -6,6 +6,7 @@ const {
   getDownCustomers,
   getInfrastructureEquipmentSummary,
   getInfrastructureGoodRows,
+  getInfrastructureUnmonitoredRows,
   getSuppressedInfrastructureRows,
   getWarningCustomers,
 } = require("../services/sonarService");
@@ -153,6 +154,7 @@ router.get("/down-customers", async (req, res) => {
 
 const warningCache = makeCache(CACHE_TTL_MS);
 const infrastructureGoodCache = makeCache(CACHE_TTL_MS);
+const infrastructureUnmonitoredCache = makeCache(CACHE_TTL_MS);
 const suppressedInfrastructureCache = makeCache(CACHE_TTL_MS);
 
 router.get("/warning-customers", async (req, res) => {
@@ -218,6 +220,45 @@ router.get("/infrastructure-good", async (req, res) => {
     });
   } catch (err) {
     console.error("Infrastructure good rows error:", err);
+    res.status(200).json({
+      ok: false,
+      source: "error",
+      error: err.message,
+      rows: [],
+    });
+  }
+});
+
+// Returns the visible infrastructure rows that land in the unmonitored bucket.
+router.get("/infrastructure-unmonitored", async (req, res) => {
+  try {
+    if (cacheFresh(infrastructureUnmonitoredCache)) {
+      return res.json({
+        ok: true,
+        source: "cache",
+        rows: infrastructureUnmonitoredCache.value,
+      });
+    }
+
+    const suppressedInfrastructureItems = getSuppressedInfrastructureItems();
+    const rows = await getInfrastructureUnmonitoredRows({
+      suppressedItemIds: suppressedInfrastructureItems,
+    });
+
+    infrastructureUnmonitoredCache.ts = Date.now();
+    infrastructureUnmonitoredCache.value = rows;
+
+    res.json({
+      ok: true,
+      source: "sonar",
+      rows,
+      meta: {
+        visible: rows.length,
+        suppressed: suppressedInfrastructureItems.size,
+      },
+    });
+  } catch (err) {
+    console.error("Infrastructure unmonitored rows error:", err);
     res.status(200).json({
       ok: false,
       source: "error",
@@ -317,6 +358,7 @@ function clearCustomerCaches() {
 function clearInfrastructureCaches() {
   summaryCache.ts = 0;
   infrastructureGoodCache.ts = 0;
+  infrastructureUnmonitoredCache.ts = 0;
   suppressedInfrastructureCache.ts = 0;
 }
 

@@ -78,6 +78,11 @@ function getInfrastructureStatusLabel(status) {
   return "Unmonitored";
 }
 
+// Checks whether an infrastructure status should land in the unmonitored bucket.
+function isUnmonitoredInfrastructureStatus(status) {
+  return status !== "GOOD" && status !== "WARNING" && status !== "DOWN";
+}
+
 // Totals infrastructure equipment counts while excluding suppressed items.
 function summarizeInfrastructureEquipment(sites, suppressedItemIds = new Set()) {
   const summary = {
@@ -214,6 +219,82 @@ function mapInfrastructureRows(
   return [...rowsByItemId.values()].sort(compareInfrastructureRows);
 }
 
+// Builds a lookup of current IP assignments for one network site.
+function buildCurrentInfrastructureHistoryMap(site) {
+  const historyMap = new Map();
+
+  for (const history of site?.ip_assignment_histories?.entities || []) {
+    if (history?.removed_datetime) {
+      continue;
+    }
+
+    const assignable = history?.ipassignmentable;
+
+    if (assignable?.__typename !== "InventoryModelFieldData") {
+      continue;
+    }
+
+    const itemId = String(assignable?.inventory_item_id || "").trim();
+
+    if (!itemId) {
+      continue;
+    }
+
+    const existing = historyMap.get(itemId) || {
+      descriptions: [],
+      ipAddresses: [],
+    };
+
+    existing.descriptions = uniqStrings([...existing.descriptions, history?.description]);
+    existing.ipAddresses = uniqStrings([...existing.ipAddresses, history?.subnet]);
+    historyMap.set(itemId, existing);
+  }
+
+  return historyMap;
+}
+
+// Converts unmonitored infrastructure inventory items into table rows.
+function mapUnmonitoredInfrastructureRows(sites, suppressedItemIds = new Set()) {
+  const rows = [];
+
+  for (const site of sites || []) {
+    const currentHistoryMap = buildCurrentInfrastructureHistoryMap(site);
+    const inventoryItems = site?.inventory_items?.entities || [];
+
+    for (const item of inventoryItems) {
+      const itemId = String(item?.id || "").trim();
+
+      if (!itemId || suppressedItemIds.has(itemId)) {
+        continue;
+      }
+
+      const status = getNormalizedInfrastructureStatus(item);
+
+      if (!isUnmonitoredInfrastructureStatus(status)) {
+        continue;
+      }
+
+      const currentInfo = currentHistoryMap.get(itemId) || {
+        descriptions: [],
+        ipAddresses: [],
+      };
+
+      rows.push({
+        inventoryItemId: itemId,
+        deviceName:
+          firstNonEmpty([...currentInfo.descriptions, item?.inventory_model?.name]) ||
+          "(unknown)",
+        status: getInfrastructureStatusLabel(status),
+        ipAddresses: currentInfo.ipAddresses,
+        networkSiteId: site?.id || null,
+        networkSiteName: site?.name || "(unknown)",
+      });
+    }
+  }
+
+  return rows.sort(compareInfrastructureRows);
+}
+
 // Fetches the customer equipment summary used on the overview page.
 async function getCustomerEquipmentSummary() {
   const data = await runSonarQuery(
@@ -253,6 +334,18 @@ async function getInfrastructureGoodRows({ suppressedItemIds = new Set() } = {})
     desiredStatus: "GOOD",
     excludedItemIds: suppressedItemIds,
   });
+}
+
+// Returns visible unmonitored infrastructure rows for the detail table.
+async function getInfrastructureUnmonitoredRows({ suppressedItemIds = new Set() } = {}) {
+  const data = await runSonarQuery(
+    INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY,
+    getInfrastructureQueryVariables(),
+  );
+
+  const sites = data?.network_sites?.entities || [];
+
+  return mapUnmonitoredInfrastructureRows(sites, suppressedItemIds);
 }
 
 // Rehydrates suppressed infrastructure IDs back into table rows.
@@ -381,6 +474,7 @@ module.exports = {
   getDownCustomers,
   getInfrastructureEquipmentSummary,
   getInfrastructureGoodRows,
+  getInfrastructureUnmonitoredRows,
   getSuppressedInfrastructureRows,
   getWarningCustomers,
 };

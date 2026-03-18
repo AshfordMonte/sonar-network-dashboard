@@ -200,8 +200,8 @@ entities {
 `,
 });
 
-// Broader snapshot used when we need to resolve suppressed infrastructure rows
-// by inventory item ID, regardless of their current status.
+// Broader snapshot used when we need to resolve suppressed or unmonitored
+// infrastructure rows by inventory item ID, regardless of current status.
 const INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY = buildEntityListQuery({
   queryName: "network_sites_table_snapshot",
   variables: INFRASTRUCTURE_INVENTORY.variables,
@@ -214,6 +214,15 @@ const INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY = buildEntityListQuery({
 entities {
   id
   name
+  inventory_items {
+    entities {
+      id
+      icmp_device_status
+      inventory_model {
+        name
+      }
+    }
+  }
   ip_assignment_histories {
     entities {
       id
