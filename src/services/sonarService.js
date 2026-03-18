@@ -7,6 +7,7 @@ const {
   ACCOUNT_BY_ID_QUERY,
   CUSTOMER_EQUIPMENT_SUMMARY_QUERY,
   DOWN_ACCOUNTS_QUERY,
+  INFRASTRUCTURE_DOWN_TABLE_QUERY,
   INFRASTRUCTURE_GOOD_TABLE_QUERY,
   INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
   INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY,
@@ -336,6 +337,21 @@ async function getInfrastructureGoodRows({ suppressedItemIds = new Set() } = {})
   });
 }
 
+// Returns visible DOWN infrastructure rows for the detail table.
+async function getInfrastructureDownRows({ suppressedItemIds = new Set() } = {}) {
+  const data = await runSonarQuery(
+    INFRASTRUCTURE_DOWN_TABLE_QUERY,
+    getInfrastructureQueryVariables(),
+  );
+
+  const sites = data?.network_sites?.entities || [];
+
+  return mapInfrastructureRows(sites, {
+    desiredStatus: "DOWN",
+    excludedItemIds: suppressedItemIds,
+  });
+}
+
 // Returns visible unmonitored infrastructure rows for the detail table.
 async function getInfrastructureUnmonitoredRows({ suppressedItemIds = new Set() } = {}) {
   const data = await runSonarQuery(
@@ -472,6 +488,7 @@ module.exports = {
   getCustomerEquipmentSummary,
   getCustomersByIds,
   getDownCustomers,
+  getInfrastructureDownRows,
   getInfrastructureEquipmentSummary,
   getInfrastructureGoodRows,
   getInfrastructureUnmonitoredRows,

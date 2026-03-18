@@ -159,18 +159,9 @@ entities {
 `;
 }
 
-// GOOD table rows come from the IP assignment side so we can show the
-// device description plus the current live IP for each infrastructure item.
-const INFRASTRUCTURE_GOOD_TABLE_QUERY = buildInventoryStatusListQuery({
-  queryName: "network_sites_good_table",
-  variables: INFRASTRUCTURE_INVENTORY.variables,
-  entityName: INFRASTRUCTURE_INVENTORY.entityName,
-  baseArgs: INFRASTRUCTURE_INVENTORY.baseArgs,
-  relationPath: INFRASTRUCTURE_INVENTORY.relationPath,
-  statusField: INFRASTRUCTURE_INVENTORY.statusField,
-  statusValue: INFRASTRUCTURE_INVENTORY.statuses.good,
-  paginator: { page: 1, records_per_page: 10000 },
-  entitySelection: `
+// Returns the IP-assignment selection used by infrastructure detail tables.
+function buildInfrastructureTableEntitySelection() {
+  return `
 entities {
   id
   name
@@ -197,8 +188,36 @@ entities {
     }
   }
 }
-`,
-});
+  `;
+}
+
+// Builds a status-scoped infrastructure table query that still returns IP assignments.
+function buildInfrastructureTableQuery(statusKey) {
+  const statusValue = INFRASTRUCTURE_INVENTORY.statuses[statusKey];
+
+  if (!statusValue) {
+    throw new Error(`Unknown infrastructure table status key: ${statusKey}`);
+  }
+
+  return buildInventoryStatusListQuery({
+    queryName: `network_sites_${statusKey}_table`,
+    variables: INFRASTRUCTURE_INVENTORY.variables,
+    entityName: INFRASTRUCTURE_INVENTORY.entityName,
+    baseArgs: INFRASTRUCTURE_INVENTORY.baseArgs,
+    relationPath: INFRASTRUCTURE_INVENTORY.relationPath,
+    statusField: INFRASTRUCTURE_INVENTORY.statusField,
+    statusValue,
+    paginator: { page: 1, records_per_page: 10000 },
+    entitySelection: buildInfrastructureTableEntitySelection(),
+  });
+}
+
+// GOOD table rows come from the IP assignment side so we can show the
+// device description plus the current live IP for each infrastructure item.
+const INFRASTRUCTURE_GOOD_TABLE_QUERY = buildInfrastructureTableQuery("good");
+
+// DOWN table rows use the same IP assignment join as the GOOD infrastructure view.
+const INFRASTRUCTURE_DOWN_TABLE_QUERY = buildInfrastructureTableQuery("down");
 
 // Broader snapshot used when we need to resolve suppressed or unmonitored
 // infrastructure rows by inventory item ID, regardless of current status.
@@ -294,6 +313,7 @@ module.exports = {
   ACCOUNT_BY_ID_QUERY,
   CUSTOMER_EQUIPMENT_SUMMARY_QUERY,
   DOWN_ACCOUNTS_QUERY,
+  INFRASTRUCTURE_DOWN_TABLE_QUERY,
   INFRASTRUCTURE_EQUIPMENT_SUMMARY_QUERY,
   INFRASTRUCTURE_GOOD_TABLE_QUERY,
   INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
