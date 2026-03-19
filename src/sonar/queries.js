@@ -309,6 +309,22 @@ query account_by_id($id: Int64Bit) {
 }
 `;
 
+// Ticket overview only needs a single aggregate count, so we ask for one
+// record and rely on page_info.total_count for the actual number.
+const OPEN_TICKET_COUNT_QUERY = `
+query OpenTicketCount($companyId: Int64Bit!) {
+  tickets(
+    company_id: $companyId
+    paginator: { page: 1, records_per_page: 1 }
+    search: [{ unset_fields: ["closed_at"] }]
+  ) {
+    page_info {
+      total_count
+    }
+  }
+}
+`;
+
 module.exports = {
   ACCOUNT_BY_ID_QUERY,
   CUSTOMER_EQUIPMENT_SUMMARY_QUERY,
@@ -318,6 +334,7 @@ module.exports = {
   INFRASTRUCTURE_GOOD_TABLE_QUERY,
   INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
   INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY,
+  OPEN_TICKET_COUNT_QUERY,
   WARNING_ACCOUNTS_QUERY,
   buildInfrastructureSitesByStatusQuery,
   buildInfrastructureUnmonitoredSitesQuery,

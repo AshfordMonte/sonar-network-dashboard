@@ -8,6 +8,7 @@ const {
   getInfrastructureEquipmentSummary,
   getInfrastructureGoodRows,
   getInfrastructureUnmonitoredRows,
+  getOpenTicketCount,
   getSuppressedInfrastructureRows,
   getWarningCustomers,
 } = require("../services/sonarService");
@@ -53,7 +54,7 @@ router.get("/status-summary", async (req, res) => {
     const suppressedInfrastructureItems = getSuppressedInfrastructureItems();
 
     // Pull everything we need for the overview at the same time.
-    const [infrastructureSummary, customerSummary, downCustomers, warningCustomers] =
+    const [infrastructureSummary, customerSummary, downCustomers, warningCustomers, openTickets] =
       await Promise.all([
         getInfrastructureEquipmentSummary({
           suppressedItemIds: suppressedInfrastructureItems,
@@ -61,6 +62,7 @@ router.get("/status-summary", async (req, res) => {
         getCustomerEquipmentSummary(),
         getDownCustomers(),
         getWarningCustomers(),
+        getOpenTicketCount(),
       ]);
 
     const visibleDown = downCustomers.filter(
@@ -91,6 +93,10 @@ router.get("/status-summary", async (req, res) => {
     const payload = {
       infrastructureEquipment: infrastructureSummary.infrastructureEquipment,
       customerEquipment,
+      // Tickets are shown as a single overview card for now.
+      tickets: {
+        open: openTickets,
+      },
       meta: {
         suppressed: {
           down: suppressedDown,
@@ -112,6 +118,7 @@ router.get("/status-summary", async (req, res) => {
       summary: {
         infrastructureEquipment: { good: 0, warning: 0, unmonitored: 0, down: 0, total: 0 },
         customerEquipment: { good: 0, warning: 0, uninventoried: 0, down: 0, total: 0 },
+        tickets: { open: 0 },
       },
     });
   }

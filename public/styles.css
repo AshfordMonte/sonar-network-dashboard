@@ -174,11 +174,18 @@ body{
 .section__underline--green{
   background: linear-gradient(90deg, var(--green), rgba(85,197,122,0.10));
 }
+.section__underline--amber{
+  background: linear-gradient(90deg, var(--yellow), rgba(242,201,76,0.10));
+}
 
 .tiles{
   display:grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
+}
+
+.tiles--single{
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .tile{
@@ -207,6 +214,18 @@ body{
   margin-top: 6px;
   font-size: 12px;
   color: var(--muted-2);
+}
+
+.tile--ticket{
+  background: linear-gradient(135deg, rgba(242,201,76,0.18), rgba(255,255,255,0.05));
+  border-color: rgba(242,201,76,0.28);
+}
+.tile--ticket:hover{
+  background: linear-gradient(135deg, rgba(242,201,76,0.22), rgba(255,255,255,0.06));
+  border-color: rgba(242,201,76,0.36);
+}
+.tile__label--ticket{
+  color: rgba(255,255,255,0.72);
 }
 
 .tile--down{

@@ -38,6 +38,9 @@ const ui = {
     uninventoried: el("cust-uninventoried"),
     down: el("cust-down"),
   },
+  tickets: {
+    open: el("tickets-open"),
+  },
 
   apiDot: el("api-dot"),
   apiStatus: el("api-status"),
@@ -47,10 +50,10 @@ const ui = {
 /**
  * Formats numbers for display in the UI.
  * - Adds commas (1,234)
- * - Replaces invalid values with an em dash
+ * - Replaces invalid values with a placeholder
  */
 function fmt(n) {
-  if (typeof n !== "number" || Number.isNaN(n)) return "—";
+  if (typeof n !== "number" || Number.isNaN(n)) return "-";
   return n.toLocaleString("en-US");
 }
 
@@ -88,6 +91,7 @@ function render(summary) {
   ui.cust.warning.textContent = fmt(summary?.customerEquipment?.warning);
   ui.cust.uninventoried.textContent = fmt(summary?.customerEquipment?.uninventoried);
   ui.cust.down.textContent = fmt(summary?.customerEquipment?.down);
+  ui.tickets.open.textContent = fmt(summary?.tickets?.open);
 }
 
 /**
@@ -98,6 +102,7 @@ function getMockSummary() {
   return {
     infrastructureEquipment: { good: 71, warning: 0, unmonitored: 0, down: 58 },
     customerEquipment: { good: 1489, warning: 9, uninventoried: 1, down: 71 },
+    tickets: { open: 4 },
   };
 }
 

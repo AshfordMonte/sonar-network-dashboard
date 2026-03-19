@@ -11,6 +11,7 @@ const {
   INFRASTRUCTURE_GOOD_TABLE_QUERY,
   INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
   INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY,
+  OPEN_TICKET_COUNT_QUERY,
   WARNING_ACCOUNTS_QUERY,
 } = require("../sonar/queries");
 
@@ -364,6 +365,12 @@ async function getInfrastructureUnmonitoredRows({ suppressedItemIds = new Set() 
   return mapUnmonitoredInfrastructureRows(sites, suppressedItemIds);
 }
 
+// Fetches the count of tickets that are not yet closed.
+async function getOpenTicketCount() {
+  const data = await runSonarQuery(OPEN_TICKET_COUNT_QUERY, getInfrastructureQueryVariables());
+  return Number(data?.tickets?.page_info?.total_count || 0);
+}
+
 // Rehydrates suppressed infrastructure IDs back into table rows.
 async function getSuppressedInfrastructureRows({ suppressedItemIds = new Set() } = {}) {
   if (!suppressedItemIds.size) return [];
@@ -492,6 +499,7 @@ module.exports = {
   getInfrastructureEquipmentSummary,
   getInfrastructureGoodRows,
   getInfrastructureUnmonitoredRows,
+  getOpenTicketCount,
   getSuppressedInfrastructureRows,
   getWarningCustomers,
 };

@@ -83,13 +83,13 @@
               aria-label="View good infrastructure equipment"
             >
               <div class="tile tile--neutral">
-                <div class="tile__value" id="infra-good">—</div>
+                <div class="tile__value" id="infra-good">-</div>
                 <div class="tile__label">Good</div>
               </div>
             </a>
 
             <div class="tile tile--neutral">
-              <div class="tile__value" id="infra-warning">—</div>
+              <div class="tile__value" id="infra-warning">-</div>
               <div class="tile__label">Warning</div>
             </div>
 
@@ -99,7 +99,7 @@
               aria-label="View unmonitored infrastructure equipment"
             >
               <div class="tile tile--neutral">
-                <div class="tile__value" id="infra-uninventoried">—</div>
+                <div class="tile__value" id="infra-uninventoried">-</div>
                 <div class="tile__label">Unmonitored</div>
               </div>
             </a>
@@ -110,7 +110,7 @@
               aria-label="View down infrastructure equipment"
             >
               <div class="tile tile--down">
-                <div class="tile__value" id="infra-down">—</div>
+                <div class="tile__value" id="infra-down">-</div>
                 <div class="tile__label tile__label--down">Down</div>
               </div>
             </a>
@@ -126,7 +126,7 @@
 
           <div class="tiles">
             <div class="tile tile--neutral">
-              <div class="tile__value" id="cust-good">—</div>
+              <div class="tile__value" id="cust-good">-</div>
               <div class="tile__label">Good</div>
             </div>
 
@@ -136,13 +136,13 @@
               aria-label="View Warning customers"
             >
               <div class="tile tile--neutral">
-                <div class="tile__value" id="cust-warning">—</div>
+                <div class="tile__value" id="cust-warning">-</div>
                 <div class="tile__label">Warning</div>
               </div>
             </a>
 
             <div class="tile tile--neutral">
-              <div class="tile__value" id="cust-uninventoried">—</div>
+              <div class="tile__value" id="cust-uninventoried">-</div>
               <div class="tile__label">Uninventoried</div>
             </div>
 
@@ -152,17 +152,32 @@
               aria-label="View Down customers"
             >
               <div class="tile tile--down">
-                <div class="tile__value" id="cust-down">—</div>
+                <div class="tile__value" id="cust-down">-</div>
                 <div class="tile__label tile__label--down">Down</div>
               </div>
             </a>
           </div>
         </div>
 
+        <!-- Support metrics -->
+        <div class="section section--spaced">
+          <div class="section__label">
+            <h2>Tickets</h2>
+            <span class="section__underline section__underline--amber"></span>
+          </div>
+
+          <div class="tiles tiles--single">
+            <div class="tile tile--ticket">
+              <div class="tile__value" id="tickets-open">-</div>
+              <div class="tile__label tile__label--ticket">Open Tickets</div>
+            </div>
+          </div>
+        </div>
+
         <footer class="panel__footer">
           <div class="status">
             <span class="status__dot" id="api-dot" aria-hidden="true"></span>
-            <span class="status__text" id="api-status">Loading…</span>
+            <span class="status__text" id="api-status">Loading...</span>
           </div>
 
           <div class="updated" id="last-updated" aria-live="polite"></div>
