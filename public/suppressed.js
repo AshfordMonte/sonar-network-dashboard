@@ -81,17 +81,13 @@ function renderTable(customers) {
     const statusTd = document.createElement("td");
     statusTd.innerHTML = `<span class="badge badge--suppressed">Suppressed</span>`;
 
-    // Device
-    const deviceTd = document.createElement("td");
-    deviceTd.textContent = c.deviceName || "—";
-
     // IPs
     const ipTd = document.createElement("td");
-    ipTd.textContent = joinIps(c.ipAddresses) || "—";
+    ipTd.textContent = joinIps(c.ipAddresses) || "-";
 
     // Address
     const addrTd = document.createElement("td");
-    addrTd.textContent = c.address || "—";
+    addrTd.textContent = c.address || "-";
 
     // Actions
     const actionsTd = document.createElement("td");
@@ -106,7 +102,7 @@ function renderTable(customers) {
 
     actionsTd.appendChild(btn);
 
-    tr.append(nameTd, statusTd, deviceTd, ipTd, addrTd, actionsTd);
+    tr.append(nameTd, statusTd, ipTd, addrTd, actionsTd);
     frag.appendChild(tr);
   }
 
@@ -130,12 +126,7 @@ function applyFilter() {
   }
 
   const filtered = lastCustomers.filter((c) => {
-    const blob = [
-      c.customerName,
-      c.deviceName,
-      joinIps(c.ipAddresses),
-      c.address,
-    ]
+    const blob = [c.customerName, joinIps(c.ipAddresses), c.address]
       .map(normalize)
       .join(" | ");
 
@@ -178,7 +169,7 @@ document.addEventListener("click", async (e) => {
 
   btn.disabled = true;
   const oldText = btn.textContent;
-  btn.textContent = "…";
+  btn.textContent = "...";
 
   try {
     const res = await fetch(`/api/suppressions/accounts/${encodeURIComponent(id)}`, {
