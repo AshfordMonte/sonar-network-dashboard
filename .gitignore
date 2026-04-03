@@ -141,3 +141,6 @@ vite.config.ts.timestamp-*
 # Local suppression data
 data/suppressions.json
 data/infrastructure-suppressions.json
+
+# Other stuff
+.codex
