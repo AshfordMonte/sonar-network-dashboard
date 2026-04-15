@@ -3,6 +3,7 @@
 This is an internal network status dashboard for ISP/WISP operations that use Sonar for customer and network management, built on **Node.js + Express** with a vanilla JS frontend.  
 It pulls data from **Sonar’s GraphQL API**, caches it server-side, and presents it in a user friendly format.
 
+![Live Dashboard Example](image.png)
 ## What it does currently
 
 - Displays infrastructure and customer device statuses (Good / Warning / Down / Uninventoried)
@@ -108,3 +109,7 @@ sonar-network-dashboard/
 |-- sonarClient.js                  # Sonar GraphQL client wrapper
 `-- README.md
 ```
+
+
+
+![Table Example](image-1.png)
