@@ -4,6 +4,11 @@
   --panel-2: #18202b;
   --tile: #222c3a;
   --tile-border: rgba(255,255,255,0.06);
+  --surface-highlight: rgba(255,255,255,0.03);
+  --surface-hover: rgba(255,255,255,0.06);
+  --ring: rgba(42,168,255,0.30);
+  --transition-fast: 140ms ease;
+  --transition-medium: 220ms ease;
 
   --text: rgba(255,255,255,0.92);
   --muted: rgba(255,255,255,0.55);
@@ -24,6 +29,8 @@ body{
               radial-gradient(900px 500px at 90% 20%, rgba(232,91,91,0.05), transparent 55%),
               var(--bg);
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 .page{
@@ -40,6 +47,17 @@ body{
   border-radius: 10px;
   box-shadow: var(--shadow);
   overflow: hidden;
+  position: relative;
+  transition: box-shadow var(--transition-medium), border-color var(--transition-medium);
+}
+
+.panel::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 18%);
+  opacity: 0.8;
 }
 
 .panel__header{
@@ -48,6 +66,7 @@ body{
   justify-content: space-between;
   padding: 14px 16px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: border-color var(--transition-medium), background var(--transition-medium);
 }
 
 .panel__header--overview{
@@ -94,7 +113,7 @@ body{
 .panel__brand--link{
   text-decoration: none;
   line-height: 0;
-  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), filter var(--transition-fast);
 }
 
 .panel__brand--link:hover{
@@ -106,7 +125,7 @@ body{
 }
 
 .panel__brand--link:focus-visible{
-  outline: 2px solid rgba(255,255,255,0.35);
+  outline: 2px solid var(--ring);
   outline-offset: 3px;
 }
 
@@ -134,6 +153,7 @@ body{
   border: 1px solid rgba(255,255,255,0.05);
   font-size: 14px;
   line-height: 1;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
 }
 .icon--link{
   cursor: pointer;
@@ -141,6 +161,13 @@ body{
 .icon--link:hover{
   color: rgba(255,255,255,0.95);
   border-color: rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.07);
+  transform: translateY(-1px);
+}
+
+.icon--link:focus-visible{
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
 }
 
 .section{
@@ -194,13 +221,17 @@ body{
   border-radius: 6px;
   padding: 14px 10px 12px;
   text-align: center;
-  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .tile:hover{
   transform: translateY(-1px);
   border-color: rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 8px 20px rgba(0,0,0,0.16);
 }
 
 .tile__value{
@@ -265,10 +296,12 @@ body{
   border-radius: 999px;
   background: rgba(255,255,255,0.35);
   box-shadow: 0 0 0 3px rgba(255,255,255,0.06);
+  transition: background var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 .status__dot--ok{
   background: var(--green);
   box-shadow: 0 0 0 3px rgba(85,197,122,0.12);
+  animation: statusPulse 2.8s ease-in-out infinite;
 }
 .status__dot--bad{
   background: var(--red);
@@ -289,7 +322,7 @@ body{
   display: block;
 }
 .tile-link:focus-visible{
-  outline: 2px solid rgba(255,255,255,0.25);
+  outline: 2px solid var(--ring);
   outline-offset: 3px;
   border-radius: 8px;
 }
@@ -310,10 +343,18 @@ body{
   border-radius: 6px;
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.06);
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
 }
 .back-link:hover{
   color: rgba(255,255,255,0.85);
   border-color: rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.06);
+  transform: translateX(-1px);
+}
+
+.back-link:focus-visible{
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 .table-toolbar{
@@ -341,17 +382,43 @@ body{
   border: 1px solid rgba(255,255,255,0.10);
   color: rgba(255,255,255,0.9);
   outline: none;
+  transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
 }
 .filter::placeholder{
   color: rgba(255,255,255,0.40);
 }
 .filter:focus{
   border-color: rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.3);
+  box-shadow: 0 0 0 3px rgba(42,168,255,0.12);
 }
 
 .table-wrap{
   padding: 0;
   overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+}
+
+.table-wrap::-webkit-scrollbar{
+  width: 10px;
+  height: 10px;
+}
+
+.table-wrap::-webkit-scrollbar-track{
+  background: transparent;
+}
+
+.table-wrap::-webkit-scrollbar-thumb{
+  background: rgba(255,255,255,0.14);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.table-wrap::-webkit-scrollbar-thumb:hover{
+  background: rgba(255,255,255,0.22);
+  background-clip: padding-box;
 }
 
 .pc-table{
@@ -371,6 +438,7 @@ body{
   position: sticky;
   top: 0;
   z-index: 1;
+  backdrop-filter: blur(8px);
 }
 
 .pc-table tbody td{
@@ -386,7 +454,7 @@ body{
 }
 
 .pc-table tbody tr{
-  transition: background 120ms ease;
+  transition: background var(--transition-fast), transform var(--transition-fast);
 }
 
 .pc-table tbody tr:hover{
@@ -400,9 +468,17 @@ body{
 .pc-link{
   color: #2aa8ff;
   text-decoration: none;
+  transition: color var(--transition-fast), text-decoration-color var(--transition-fast);
 }
 .pc-link:hover{
   text-decoration: underline;
+  text-decoration-color: rgba(42,168,255,0.7);
+}
+
+.pc-link:focus-visible{
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .badge{
@@ -413,6 +489,7 @@ body{
   font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.2px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
 }
 .badge--down{
   background: rgba(232,91,91,0.95);
@@ -601,7 +678,8 @@ body.page--wide .table-wrap{
 
   cursor: pointer;            /* the click icon */
   user-select: none;
-  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease, color 120ms ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .suppress-btn:hover{
@@ -609,6 +687,7 @@ body.page--wide .table-wrap{
   background: rgba(255,255,255,0.06);
   color: rgba(255,255,255,0.92);
   transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.14);
 }
 
 .suppress-btn:active{
@@ -617,7 +696,7 @@ body.page--wide .table-wrap{
 }
 
 .suppress-btn:focus-visible{
-  outline: 2px solid rgba(42,168,255,0.35);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -648,13 +727,15 @@ body.page--wide .table-wrap{
   font-size: 12px;
   font-weight: 650;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .unsuppress-btn:hover{
   background: rgba(85,197,122,0.12);
   border-color: rgba(85,197,122,0.55);
   transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.14);
 }
 
 .unsuppress-btn:active{
@@ -686,11 +767,40 @@ body.page--wide .table-wrap{
   text-decoration: none;
   font-weight: 600;
   white-space: nowrap;
+  transition: color var(--transition-fast), opacity var(--transition-fast);
 }
 
 .suppressed-link:hover{
   text-decoration: underline;
   color: rgba(42,168,255,1);
+}
+
+.suppressed-link:focus-visible{
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@keyframes statusPulse{
+  0%, 100%{
+    transform: scale(1);
+    box-shadow: 0 0 0 3px rgba(85,197,122,0.12);
+  }
+  50%{
+    transform: scale(1.03);
+    box-shadow: 0 0 0 4px rgba(85,197,122,0.16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *,
+  *::before,
+  *::after{
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 .panel--tall .suppressed-hint{
   position: sticky;
