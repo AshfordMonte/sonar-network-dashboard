@@ -40,6 +40,7 @@ There are currently no dedicated `test`, `lint`, or `build` scripts in `package.
 ## Change Guidance
 - Keep backend changes aligned with the current architecture: route handlers in `src/routes`, Sonar fetch/transform logic in `src/services`, query construction in `src/sonar`, shared helpers in `src/utils`.
 - Keep frontend changes page-oriented. Reuse shared CSS and simple DOM helpers instead of introducing frameworks or bundling.
+- Treat infrastructure status flows as a coordinated set across the overview and detail pages: `good`, `warning`, `unmonitored`, `down`, and `suppressed`.
 - Avoid adding heavy dependencies unless they clearly reduce maintenance cost.
 - Preserve API response shapes unless the task explicitly includes coordinated frontend and backend updates.
 - Be careful with cache-related changes. If suppression behavior or summary calculations change, verify whether the relevant cache invalidation helpers also need updates.

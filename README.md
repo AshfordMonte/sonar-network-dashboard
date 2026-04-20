@@ -75,6 +75,8 @@ sonar-network-dashboard/
 |   |
 |   |-- infrastructure-good.html       # Good infrastructure page
 |   |-- infrastructure-good.js         # Good infrastructure table logic
+|   |-- infrastructure-warning.html    # Warning infrastructure page
+|   |-- infrastructure-warning.js      # Warning infrastructure table logic
 |   |-- infrastructure-down.html       # Down infrastructure page
 |   |-- infrastructure-down.js         # Down infrastructure table logic
 |   |-- infrastructure-unmonitored.html # Unmonitored infrastructure page

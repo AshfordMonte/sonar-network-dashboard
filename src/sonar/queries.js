@@ -216,6 +216,9 @@ function buildInfrastructureTableQuery(statusKey) {
 // device description plus the current live IP for each infrastructure item.
 const INFRASTRUCTURE_GOOD_TABLE_QUERY = buildInfrastructureTableQuery("good");
 
+// WARNING table rows use the same IP assignment join as the other infrastructure views.
+const INFRASTRUCTURE_WARNING_TABLE_QUERY = buildInfrastructureTableQuery("warning");
+
 // DOWN table rows use the same IP assignment join as the GOOD infrastructure view.
 const INFRASTRUCTURE_DOWN_TABLE_QUERY = buildInfrastructureTableQuery("down");
 
@@ -334,6 +337,7 @@ module.exports = {
   INFRASTRUCTURE_GOOD_TABLE_QUERY,
   INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
   INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY,
+  INFRASTRUCTURE_WARNING_TABLE_QUERY,
   OPEN_TICKET_COUNT_QUERY,
   WARNING_ACCOUNTS_QUERY,
   buildInfrastructureSitesByStatusQuery,

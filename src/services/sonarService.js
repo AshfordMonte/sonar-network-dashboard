@@ -11,6 +11,7 @@ const {
   INFRASTRUCTURE_GOOD_TABLE_QUERY,
   INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
   INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY,
+  INFRASTRUCTURE_WARNING_TABLE_QUERY,
   OPEN_TICKET_COUNT_QUERY,
   WARNING_ACCOUNTS_QUERY,
 } = require("../sonar/queries");
@@ -353,6 +354,21 @@ async function getInfrastructureDownRows({ suppressedItemIds = new Set() } = {})
   });
 }
 
+// Returns visible WARNING infrastructure rows for the detail table.
+async function getInfrastructureWarningRows({ suppressedItemIds = new Set() } = {}) {
+  const data = await runSonarQuery(
+    INFRASTRUCTURE_WARNING_TABLE_QUERY,
+    getInfrastructureQueryVariables(),
+  );
+
+  const sites = data?.network_sites?.entities || [];
+
+  return mapInfrastructureRows(sites, {
+    desiredStatus: "WARNING",
+    excludedItemIds: suppressedItemIds,
+  });
+}
+
 // Returns visible unmonitored infrastructure rows for the detail table.
 async function getInfrastructureUnmonitoredRows({ suppressedItemIds = new Set() } = {}) {
   const data = await runSonarQuery(
@@ -499,6 +515,7 @@ module.exports = {
   getInfrastructureEquipmentSummary,
   getInfrastructureGoodRows,
   getInfrastructureUnmonitoredRows,
+  getInfrastructureWarningRows,
   getOpenTicketCount,
   getSuppressedInfrastructureRows,
   getWarningCustomers,
