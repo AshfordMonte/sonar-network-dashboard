@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Uninventoried Customers</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+
+  <body class="page--wide">
+    <main class="page">
+      <section
+        class="panel panel--wide panel--tall"
+        aria-label="Uninventoried Customers"
+      >
+        <header class="panel__header">
+          <div class="panel__header-left">
+            <a class="back-link" href="/" aria-label="Back to dashboard"
+              ><- Back</a
+            >
+            <h1 class="panel__title">Uninventoried Customers</h1>
+          </div>
+        </header>
+
+        <div class="table-toolbar">
+          <div class="table-toolbar__left">
+            <div class="status">
+              <span class="status__dot" id="api-dot" aria-hidden="true"></span>
+              <span class="status__text" id="api-status">Loading...</span>
+            </div>
+          </div>
+
+          <div class="table-toolbar__right">
+            <input
+              id="filter"
+              class="filter"
+              type="search"
+              placeholder="Filter by customer / IP / address..."
+              aria-label="Filter uninventoried customers"
+            />
+            <span class="updated" id="last-updated"></span>
+          </div>
+        </div>
+
+        <div
+          class="table-wrap"
+          role="region"
+          aria-label="Uninventoried Customers Table"
+          tabindex="0"
+        >
+          <table class="pc-table">
+            <thead>
+              <tr>
+                <th>Customer Name</th>
+                <th>Status</th>
+                <th>IP Address</th>
+                <th>Address</th>
+                <th
+                  class="actions-col"
+                  title="Suppress accounts from views and totals"
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+
+            <tbody id="rows">
+              <!-- Filled by uninventoried.js -->
+            </tbody>
+          </table>
+
+          <div class="table-empty" id="empty" hidden>No results.</div>
+        </div>
+        <div class="suppressed-hint">
+          <span>Some customers may be hidden.</span>
+          <a href="/suppressed.html" class="suppressed-link">
+            View suppressed customers ->
+          </a>
+        </div>
+
+        <footer class="panel__footer">
+          <span id="count">0 customers</span>
+        </footer>
+      </section>
+    </main>
+
+    <script src="./refresh-config.js"></script>
+    <script src="./uninventoried.js"></script>
+  </body>
+</html>

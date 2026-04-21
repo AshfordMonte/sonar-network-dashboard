@@ -4,6 +4,7 @@ const {
   getCustomerEquipmentSummary,
   getCustomersByIds,
   getDownCustomers,
+  getGoodCustomers,
   getInfrastructureDownRows,
   getInfrastructureEquipmentSummary,
   getInfrastructureGoodRows,
@@ -11,6 +12,7 @@ const {
   getInfrastructureWarningRows,
   getOpenTicketCount,
   getSuppressedInfrastructureRows,
+  getUninventoriedCustomers,
   getWarningCustomers,
 } = require("../services/sonarService");
 
@@ -39,6 +41,38 @@ function filterSuppressed(customers) {
   return customers.filter((customer) => !suppressed.has(String(customer.customerId)));
 }
 
+// Parses a positive integer query parameter with bounds.
+function parsePositiveInt(value, fallback, { min = 1, max = Number.MAX_SAFE_INTEGER } = {}) {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.min(Math.max(parsed, min), max);
+}
+
+// Slices a full row list into one page and returns pagination metadata.
+function paginateRows(rows, requestedPage, pageSize) {
+  const total = rows.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(Math.max(requestedPage, 1), totalPages);
+  const start = total ? (page - 1) * pageSize : 0;
+  const end = Math.min(start + pageSize, total);
+
+  return {
+    rows: rows.slice(start, end),
+    meta: {
+      page,
+      pageSize,
+      total,
+      totalPages,
+      from: total ? start + 1 : 0,
+      to: end,
+    },
+  };
+}
+
 const summaryCache = makeCache(CACHE_TTL_MS);
 
 router.get("/status-summary", async (req, res) => {
@@ -55,16 +89,23 @@ router.get("/status-summary", async (req, res) => {
     const suppressedInfrastructureItems = getSuppressedInfrastructureItems();
 
     // Pull everything we need for the overview at the same time.
-    const [infrastructureSummary, customerSummary, downCustomers, warningCustomers, openTickets] =
-      await Promise.all([
-        getInfrastructureEquipmentSummary({
-          suppressedItemIds: suppressedInfrastructureItems,
-        }),
-        getCustomerEquipmentSummary(),
-        getDownCustomers(),
-        getWarningCustomers(),
-        getOpenTicketCount(),
-      ]);
+    const [
+      infrastructureSummary,
+      customerSummary,
+      downCustomers,
+      warningCustomers,
+      uninventoriedCustomers,
+      openTickets,
+    ] = await Promise.all([
+      getInfrastructureEquipmentSummary({
+        suppressedItemIds: suppressedInfrastructureItems,
+      }),
+      getCustomerEquipmentSummary(),
+      getDownCustomers(),
+      getWarningCustomers(),
+      getUninventoriedCustomers(),
+      getOpenTicketCount(),
+    ]);
 
     const visibleDown = downCustomers.filter(
       (customer) => !suppressed.has(String(customer.customerId)),
@@ -72,22 +113,30 @@ router.get("/status-summary", async (req, res) => {
     const visibleWarning = warningCustomers.filter(
       (customer) => !suppressed.has(String(customer.customerId)),
     );
+    const visibleUninventoried = uninventoriedCustomers.filter(
+      (customer) => !suppressed.has(String(customer.customerId)),
+    );
 
     const suppressedDown = downCustomers.length - visibleDown.length;
     const suppressedWarning = warningCustomers.length - visibleWarning.length;
+    const suppressedUninventoried =
+      uninventoriedCustomers.length - visibleUninventoried.length;
 
     const visibleTotal =
-      customerSummary.customerEquipment.total - suppressedDown - suppressedWarning;
+      customerSummary.customerEquipment.total -
+      suppressedDown -
+      suppressedWarning -
+      suppressedUninventoried;
 
     const customerEquipment = {
       down: visibleDown.length,
       warning: visibleWarning.length,
-      uninventoried: customerSummary.customerEquipment.uninventoried,
+      uninventoried: visibleUninventoried.length,
       good:
         visibleTotal -
         visibleDown.length -
         visibleWarning.length -
-        customerSummary.customerEquipment.uninventoried,
+        visibleUninventoried.length,
       total: visibleTotal,
     };
 
@@ -102,6 +151,7 @@ router.get("/status-summary", async (req, res) => {
         suppressed: {
           down: suppressedDown,
           warning: suppressedWarning,
+          uninventoried: suppressedUninventoried,
         },
       },
     };
@@ -126,6 +176,7 @@ router.get("/status-summary", async (req, res) => {
 });
 
 const downCache = makeCache(CACHE_TTL_MS);
+const goodCache = makeCache(CACHE_TTL_MS);
 
 router.get("/down-customers", async (req, res) => {
   try {
@@ -162,11 +213,51 @@ router.get("/down-customers", async (req, res) => {
 });
 
 const warningCache = makeCache(CACHE_TTL_MS);
+const uninventoriedCache = makeCache(CACHE_TTL_MS);
 const infrastructureDownCache = makeCache(CACHE_TTL_MS);
 const infrastructureGoodCache = makeCache(CACHE_TTL_MS);
 const infrastructureUnmonitoredCache = makeCache(CACHE_TTL_MS);
 const infrastructureWarningCache = makeCache(CACHE_TTL_MS);
 const suppressedInfrastructureCache = makeCache(CACHE_TTL_MS);
+
+router.get("/good-customers", async (req, res) => {
+  try {
+    const page = parsePositiveInt(req.query.page, 1);
+    const pageSize = parsePositiveInt(req.query.pageSize, 500, { min: 1, max: 500 });
+    const fromCache = cacheFresh(goodCache);
+
+    if (!fromCache) {
+      const customers = await getGoodCustomers();
+      goodCache.ts = Date.now();
+      goodCache.value = filterSuppressed(customers);
+    }
+
+    const pagination = paginateRows(goodCache.value || [], page, pageSize);
+
+    res.json({
+      ok: true,
+      source: fromCache ? "cache" : "sonar",
+      customers: pagination.rows,
+      meta: pagination.meta,
+    });
+  } catch (err) {
+    console.error("Good customers error:", err);
+    res.status(200).json({
+      ok: false,
+      source: "error",
+      error: err.message,
+      customers: [],
+      meta: {
+        page: 1,
+        pageSize: 500,
+        total: 0,
+        totalPages: 1,
+        from: 0,
+        to: 0,
+      },
+    });
+  }
+});
 
 router.get("/warning-customers", async (req, res) => {
   try {
@@ -236,6 +327,43 @@ router.get("/infrastructure-good", async (req, res) => {
       source: "error",
       error: err.message,
       rows: [],
+    });
+  }
+});
+
+router.get("/uninventoried-customers", async (req, res) => {
+  try {
+    if (cacheFresh(uninventoriedCache)) {
+      return res.json({
+        ok: true,
+        source: "cache",
+        customers: uninventoriedCache.value,
+      });
+    }
+
+    const customers = await getUninventoriedCustomers();
+    const visibleCustomers = filterSuppressed(customers);
+
+    uninventoriedCache.ts = Date.now();
+    uninventoriedCache.value = visibleCustomers;
+
+    res.json({
+      ok: true,
+      source: "sonar",
+      customers: visibleCustomers,
+      meta: {
+        raw: customers.length,
+        suppressed: customers.length - visibleCustomers.length,
+        visible: visibleCustomers.length,
+      },
+    });
+  } catch (err) {
+    console.error("Uninventoried customers error:", err);
+    res.status(200).json({
+      ok: false,
+      source: "error",
+      error: err.message,
+      customers: [],
     });
   }
 });
@@ -440,7 +568,9 @@ router.get("/suppressed-infrastructure", async (req, res) => {
 function clearCustomerCaches() {
   summaryCache.ts = 0;
   downCache.ts = 0;
+  goodCache.ts = 0;
   warningCache.ts = 0;
+  uninventoriedCache.ts = 0;
 }
 
 // Clears cached infrastructure responses after suppression changes.

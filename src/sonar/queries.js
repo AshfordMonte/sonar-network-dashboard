@@ -4,6 +4,7 @@ const {
   buildEntityListQuery,
   buildInventoryCountQuery,
   buildInventoryStatusListQuery,
+  buildInventoryUninventoriedListQuery,
   buildStatusScopedRelationSelection,
 } = require("./inventoryQueryBuilder");
 
@@ -37,6 +38,12 @@ const CUSTOMER_INVENTORY = {
     },
   ],
 };
+
+const CUSTOMER_LIST_PAGINATION_VARIABLES = [
+  ...CUSTOMER_INVENTORY.variables,
+  "$page: Int!",
+  "$pageSize: Int!",
+];
 
 // Infrastructure inventory settings.
 // network_sites uses a different relation path and uppercase status values.
@@ -95,14 +102,15 @@ entities {
 // Customer detail table queries.
 const DOWN_ACCOUNTS_QUERY = buildInventoryStatusListQuery({
   queryName: "down_accounts",
-  variables: CUSTOMER_INVENTORY.variables,
+  variables: CUSTOMER_LIST_PAGINATION_VARIABLES,
   entityName: CUSTOMER_INVENTORY.entityName,
   baseArgs: CUSTOMER_INVENTORY.baseArgs,
   relationPath: CUSTOMER_INVENTORY.relationPath,
   statusField: CUSTOMER_INVENTORY.statusField,
   statusValue: CUSTOMER_INVENTORY.statuses.down,
-  paginator: { page: 1, records_per_page: 2000 },
+  paginator: { page: "$page", records_per_page: "$pageSize" },
   entitySelection: `
+page_info { total_count }
 entities {
   id
   name
@@ -114,14 +122,53 @@ entities {
 
 const WARNING_ACCOUNTS_QUERY = buildInventoryStatusListQuery({
   queryName: "warning_accounts",
-  variables: CUSTOMER_INVENTORY.variables,
+  variables: CUSTOMER_LIST_PAGINATION_VARIABLES,
   entityName: CUSTOMER_INVENTORY.entityName,
   baseArgs: CUSTOMER_INVENTORY.baseArgs,
   relationPath: CUSTOMER_INVENTORY.relationPath,
   statusField: CUSTOMER_INVENTORY.statusField,
   statusValue: CUSTOMER_INVENTORY.statuses.warning,
-  paginator: { page: 1, records_per_page: 2000 },
+  paginator: { page: "$page", records_per_page: "$pageSize" },
   entitySelection: `
+page_info { total_count }
+entities {
+  id
+  name
+  addresses { entities { line1 } }
+  ip_assignment_histories { entities { subnet } }
+}
+`,
+});
+
+const GOOD_ACCOUNTS_QUERY = buildInventoryStatusListQuery({
+  queryName: "good_accounts",
+  variables: CUSTOMER_LIST_PAGINATION_VARIABLES,
+  entityName: CUSTOMER_INVENTORY.entityName,
+  baseArgs: CUSTOMER_INVENTORY.baseArgs,
+  relationPath: CUSTOMER_INVENTORY.relationPath,
+  statusField: CUSTOMER_INVENTORY.statusField,
+  statusValue: CUSTOMER_INVENTORY.statuses.good,
+  paginator: { page: "$page", records_per_page: "$pageSize" },
+  entitySelection: `
+page_info { total_count }
+entities {
+  id
+  name
+  addresses { entities { line1 } }
+  ip_assignment_histories { entities { subnet } }
+}
+`,
+});
+
+const UNINVENTORIED_ACCOUNTS_QUERY = buildInventoryUninventoriedListQuery({
+  queryName: "uninventoried_accounts",
+  variables: CUSTOMER_LIST_PAGINATION_VARIABLES,
+  entityName: CUSTOMER_INVENTORY.entityName,
+  baseArgs: CUSTOMER_INVENTORY.baseArgs,
+  paginator: { page: "$page", records_per_page: "$pageSize" },
+  uninventoriedFilters: CUSTOMER_INVENTORY.uninventoriedFilters,
+  entitySelection: `
+page_info { total_count }
 entities {
   id
   name
@@ -332,6 +379,7 @@ module.exports = {
   ACCOUNT_BY_ID_QUERY,
   CUSTOMER_EQUIPMENT_SUMMARY_QUERY,
   DOWN_ACCOUNTS_QUERY,
+  GOOD_ACCOUNTS_QUERY,
   INFRASTRUCTURE_DOWN_TABLE_QUERY,
   INFRASTRUCTURE_EQUIPMENT_SUMMARY_QUERY,
   INFRASTRUCTURE_GOOD_TABLE_QUERY,
@@ -339,6 +387,7 @@ module.exports = {
   INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY,
   INFRASTRUCTURE_WARNING_TABLE_QUERY,
   OPEN_TICKET_COUNT_QUERY,
+  UNINVENTORIED_ACCOUNTS_QUERY,
   WARNING_ACCOUNTS_QUERY,
   buildInfrastructureSitesByStatusQuery,
   buildInfrastructureUnmonitoredSitesQuery,

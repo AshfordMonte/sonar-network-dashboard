@@ -808,4 +808,53 @@ body.page--wide .table-wrap{
   z-index: 2;
 }
 
+.panel__footer--pagination{
+  flex-wrap: wrap;
+}
+
+.pagination{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pagination__button{
+  appearance: none;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.82);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.pagination__button:hover{
+  border-color: rgba(255,255,255,0.26);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.92);
+  transform: translateY(-1px);
+}
+
+.pagination__button:disabled{
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pagination__button--active{
+  background: rgba(42,168,255,0.18);
+  border-color: rgba(42,168,255,0.45);
+  color: rgba(255,255,255,0.95);
+}
+
+.pagination__ellipsis{
+  color: var(--muted-2);
+  font-size: 12px;
+}
+
 

@@ -7,14 +7,18 @@ const {
   ACCOUNT_BY_ID_QUERY,
   CUSTOMER_EQUIPMENT_SUMMARY_QUERY,
   DOWN_ACCOUNTS_QUERY,
+  GOOD_ACCOUNTS_QUERY,
   INFRASTRUCTURE_DOWN_TABLE_QUERY,
   INFRASTRUCTURE_GOOD_TABLE_QUERY,
   INFRASTRUCTURE_INVENTORY_SNAPSHOT_QUERY,
   INFRASTRUCTURE_TABLE_SNAPSHOT_QUERY,
   INFRASTRUCTURE_WARNING_TABLE_QUERY,
   OPEN_TICKET_COUNT_QUERY,
+  UNINVENTORIED_ACCOUNTS_QUERY,
   WARNING_ACCOUNTS_QUERY,
 } = require("../sonar/queries");
+
+const CUSTOMER_QUERY_PAGE_SIZE = 1000;
 
 // Loads the Sonar connection settings and shared query variables.
 function getSonarConfig() {
@@ -491,26 +495,104 @@ function mapAccountEntitiesToRows(entities, statusLabel) {
   });
 }
 
+// Fetches all account entities for a paged customer query.
+async function fetchAllCustomerAccountEntities(query) {
+  const entities = [];
+  let page = 1;
+  let totalCount = null;
+
+  while (true) {
+    const data = await runSonarQuery(query, {
+      ...getCustomerQueryVariables(),
+      page,
+      pageSize: CUSTOMER_QUERY_PAGE_SIZE,
+    });
+
+    const accountPage = data?.accounts;
+    const pageEntities = accountPage?.entities || [];
+    const pageTotal = Number(accountPage?.page_info?.total_count || 0);
+
+    if (totalCount === null) {
+      totalCount = pageTotal;
+    }
+
+    entities.push(...pageEntities);
+
+    if (!pageEntities.length || entities.length >= totalCount) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return entities;
+}
+
+// Deduplicates customer rows by account ID so cross-page fetches stay stable.
+function dedupeCustomerRows(rows) {
+  const seen = new Set();
+  const deduped = [];
+
+  for (const row of rows || []) {
+    const id = String(row?.customerId || "").trim();
+
+    if (!id || seen.has(id)) {
+      continue;
+    }
+
+    seen.add(id);
+    deduped.push(row);
+  }
+
+  return deduped;
+}
+
 // Returns visible Down customer rows for the customer detail page.
 async function getDownCustomers() {
-  const data = await runSonarQuery(DOWN_ACCOUNTS_QUERY, getCustomerQueryVariables());
-  const entities = data?.accounts?.entities || [];
-
-  return mapAccountEntitiesToRows(entities, "Down");
+  const entities = await fetchAllCustomerAccountEntities(DOWN_ACCOUNTS_QUERY);
+  return dedupeCustomerRows(mapAccountEntitiesToRows(entities, "Down"));
 }
 
 // Returns visible Warning customer rows for the customer detail page.
 async function getWarningCustomers() {
-  const data = await runSonarQuery(WARNING_ACCOUNTS_QUERY, getCustomerQueryVariables());
-  const entities = data?.accounts?.entities || [];
+  const entities = await fetchAllCustomerAccountEntities(WARNING_ACCOUNTS_QUERY);
+  return dedupeCustomerRows(mapAccountEntitiesToRows(entities, "Warning"));
+}
 
-  return mapAccountEntitiesToRows(entities, "Warning");
+// Returns visible Uninventoried customer rows for the customer detail page.
+async function getUninventoriedCustomers() {
+  const entities = await fetchAllCustomerAccountEntities(UNINVENTORIED_ACCOUNTS_QUERY);
+  return dedupeCustomerRows(mapAccountEntitiesToRows(entities, "Uninventoried"));
+}
+
+// Returns customer rows that belong in the dashboard's derived GOOD bucket.
+async function getGoodCustomers() {
+  const [goodEntities, downCustomers, warningCustomers, uninventoriedCustomers] =
+    await Promise.all([
+      fetchAllCustomerAccountEntities(GOOD_ACCOUNTS_QUERY),
+      getDownCustomers(),
+      getWarningCustomers(),
+      getUninventoriedCustomers(),
+    ]);
+
+  const excludedCustomerIds = new Set([
+    ...downCustomers.map((customer) => String(customer.customerId)),
+    ...warningCustomers.map((customer) => String(customer.customerId)),
+    ...uninventoriedCustomers.map((customer) => String(customer.customerId)),
+  ]);
+
+  const goodRows = mapAccountEntitiesToRows(goodEntities, "Good").filter(
+    (customer) => !excludedCustomerIds.has(String(customer.customerId)),
+  );
+
+  return dedupeCustomerRows(goodRows);
 }
 
 module.exports = {
   getCustomerEquipmentSummary,
   getCustomersByIds,
   getDownCustomers,
+  getGoodCustomers,
   getInfrastructureDownRows,
   getInfrastructureEquipmentSummary,
   getInfrastructureGoodRows,
@@ -518,5 +600,6 @@ module.exports = {
   getInfrastructureWarningRows,
   getOpenTicketCount,
   getSuppressedInfrastructureRows,
+  getUninventoriedCustomers,
   getWarningCustomers,
 };

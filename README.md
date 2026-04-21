@@ -66,8 +66,12 @@ sonar-network-dashboard/
 |   |-- refresh-config.js           # Client refresh interval config
 |   |-- hc-wireless-logo.avif       # Dashboard header branding
 |   |
+|   |-- good.html                   # Good customers page
+|   |-- good.js                     # Good customers table logic with pagination
 |   |-- down.html                   # Down customers page
 |   |-- down.js                     # Down customers table logic
+|   |-- uninventoried.html          # Uninventoried customers page
+|   |-- uninventoried.js            # Uninventoried customers table logic
 |   |-- warning.html                # Warning customers page
 |   |-- warning.js                  # Warning customers table logic
 |   |-- suppressed.html             # Suppressed customers page
