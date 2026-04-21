@@ -23,8 +23,11 @@ This repository is a LAN-hosted Sonar operations dashboard built with Node.js, E
 ## Local Commands
 - Install dependencies: `npm install`
 - Start app: `npm start`
+- Run browser tests: `npm run test:e2e`
+- Run browser tests headed: `npm run test:e2e:headed`
+- Open the Playwright report: `npm run test:e2e:report`
 
-There are currently no dedicated `test`, `lint`, or `build` scripts in `package.json`. If you add one, update this file and `README.md`.
+Playwright browser tests are available and should be preferred for UI verification when touching page behavior.
 
 ## Environment And Runtime Assumptions
 - Copy `.env.example` to `.env` and fill in Sonar-specific credentials and IDs before running the app.
@@ -47,7 +50,8 @@ There are currently no dedicated `test`, `lint`, or `build` scripts in `package.
 
 ## Verification Expectations
 - At minimum, run the most relevant local verification available after changes.
-- Because this repo does not yet expose automated tests, verification will often mean:
+- Browser/UI changes should normally be verified with `npm run test:e2e` when the affected flows are covered.
+- Additional verification may still include:
   - starting the server with `npm start`
   - checking for startup errors
   - verifying touched routes/pages manually when feasible

@@ -144,3 +144,10 @@ data/infrastructure-suppressions.json
 
 # Other stuff
 .codex
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

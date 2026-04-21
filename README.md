@@ -48,6 +48,26 @@ The server binds to all host IPv4 addresses by default for LAN access.
 - **Backend:** Node.js, Express
 - **Frontend:** Vanilla HTML, CSS, JavaScript  
 - **Data:** Sonar GraphQL API
+- **Testing:** Playwright browser tests with mocked dashboard API responses
+
+## Local Commands
+
+- Install dependencies: `npm install`
+- Start app: `npm start`
+- Run end-to-end tests: `npm run test:e2e`
+- Run end-to-end tests headed: `npm run test:e2e:headed`
+- Open the last Playwright report: `npm run test:e2e:report`
+
+## Playwright Testing
+
+The Playwright suite starts the local Express server and mocks browser-side `/api/*` requests so UI tests can run without live Sonar access.
+
+- Install the browser runtime once on a new machine with `npx playwright install chromium`
+- Run `npm run test:e2e` to execute the dashboard smoke and interaction suite
+- Use `npm run test:e2e:headed` when you want to watch the browser while tests run
+- Use `npm run test:e2e:report` after a run to inspect the HTML report
+
+Because the tests intercept API calls in the browser, they do not require real Sonar credentials to validate page rendering, filtering, pagination, and suppression flows.
 
 ## Project Structure
 
@@ -111,8 +131,10 @@ sonar-network-dashboard/
 |-- .gitignore
 |-- package.json
 |-- package-lock.json
+|-- playwright.config.js            # Playwright test runner configuration
 |-- server.js                       # Express application entry point
 |-- sonarClient.js                  # Sonar GraphQL client wrapper
+|-- tests/                          # Browser tests and Playwright helpers
 `-- README.md
 ```
 

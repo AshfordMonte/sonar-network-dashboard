@@ -79,7 +79,7 @@ function setCount(filteredCount) {
   const pageInfo = `Page ${lastMeta.page} of ${lastMeta.totalPages}`;
 
   if (!ui.filter.value.trim()) {
-    ui.count.textContent = `${base} · ${pageInfo}`;
+    ui.count.textContent = `${base} | ${pageInfo}`;
     return;
   }
 
