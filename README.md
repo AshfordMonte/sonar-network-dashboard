@@ -8,6 +8,9 @@ It pulls data from **Sonar’s GraphQL API**, caches it server-side, and present
 
 - Displays infrastructure and customer device statuses (Good / Warning / Down / Uninventoried)
 - Provides customer and infrastructure equipment ICMP status views and total counts
+- Includes detail pages for customer Good / Warning / Down / Uninventoried and suppressed views
+- Includes paginated Good customer browsing plus customer and infrastructure suppression workflows
+- Uses lightweight loading polish on navigation and refreshes, including panel fade-in, skeleton rows, and footer/progress states
 - Automatically proxies and caches Sonar GraphQL requests
 - Designed for LAN use only
 
@@ -82,6 +85,7 @@ sonar-network-dashboard/
 |-- public/                         # Frontend (served statically)
 |   |-- index.html                  # Main dashboard
 |   |-- app.js                      # Dashboard client logic
+|   |-- loading-ui.js               # Shared loading animations and skeleton helpers
 |   |-- styles.css                  # Global UI styles
 |   |-- refresh-config.js           # Client refresh interval config
 |   |-- hc-wireless-logo.avif       # Dashboard header branding

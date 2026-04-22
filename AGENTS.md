@@ -9,7 +9,7 @@ This repository is a LAN-hosted Sonar operations dashboard built with Node.js, E
 - `src/services/`: Sonar data access and JSON-backed suppression persistence.
 - `src/sonar/`: Shared GraphQL query builders and Sonar query definitions.
 - `src/utils/`: Environment parsing, LAN IP detection, and normalization helpers.
-- `public/`: Static frontend pages and page-specific browser scripts.
+- `public/`: Static frontend pages, page-specific browser scripts, shared loading UI helpers, and global CSS.
 - `data/`: Live suppression JSON files plus example seed files.
 
 ## Stack And Conventions
@@ -42,7 +42,7 @@ Playwright browser tests are available and should be preferred for UI verificati
 
 ## Change Guidance
 - Keep backend changes aligned with the current architecture: route handlers in `src/routes`, Sonar fetch/transform logic in `src/services`, query construction in `src/sonar`, shared helpers in `src/utils`.
-- Keep frontend changes page-oriented. Reuse shared CSS and simple DOM helpers instead of introducing frameworks or bundling.
+- Keep frontend changes page-oriented. Reuse shared CSS and simple DOM helpers such as the shared loading UI layer instead of introducing frameworks or bundling.
 - Treat infrastructure status flows as a coordinated set across the overview and detail pages: `good`, `warning`, `unmonitored`, `down`, and `suppressed`.
 - Avoid adding heavy dependencies unless they clearly reduce maintenance cost.
 - Preserve API response shapes unless the task explicitly includes coordinated frontend and backend updates.
