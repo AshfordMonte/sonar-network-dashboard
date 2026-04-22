@@ -126,6 +126,9 @@ async function fetchSummary() {
  * - Updates timestamp
  */
 async function refresh() {
+  window.DashboardLoadingUI?.startFetch();
+  ui.apiStatus.textContent = "API: Loading...";
+
   try {
     const payload = await fetchSummary();
     render(payload.summary);
@@ -145,6 +148,8 @@ async function refresh() {
     // If the request fails entirely (network error, server down, etc.)
     setApiState("bad", "API: Request failed");
     setLastUpdated(new Date());
+  } finally {
+    window.DashboardLoadingUI?.finishFetch();
   }
 }
 

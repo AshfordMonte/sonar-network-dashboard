@@ -230,6 +230,9 @@ function applyFilter() {
 }
 
 async function refresh() {
+  window.DashboardLoadingUI?.startFetch();
+  ui.apiStatus.textContent = "API: Loading...";
+
   try {
     const payload = await fetchGoodCustomers(currentPage);
     if (!payload.ok) throw new Error(payload.error || "API returned ok=false");
@@ -258,6 +261,8 @@ async function refresh() {
     };
     renderPagination();
     renderTable([]);
+  } finally {
+    window.DashboardLoadingUI?.finishFetch();
   }
 }
 
