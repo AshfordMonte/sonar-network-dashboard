@@ -35,7 +35,7 @@
               id="filter"
               class="filter"
               type="search"
-              placeholder="Filter by customer / IP / address…"
+              placeholder="Filter by customer / IP pool / address…"
               aria-label="Filter down customers"
             />
             <span class="updated" id="last-updated"></span>
@@ -48,12 +48,13 @@
           aria-label="Down Customers Table"
           tabindex="0"
         >
-          <table class="pc-table">
+          <table class="pc-table customer-table">
             <thead>
               <tr>
                 <th>Customer Name</th>
                 <th>Status</th>
                 <th>IP Address</th>
+                <th>IP Pool</th>
                 <th>Address</th>
                 <th
                   class="actions-col"

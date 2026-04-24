@@ -759,6 +759,52 @@ body.page--wide .table-wrap{
   white-space: nowrap;
 }
 
+.customer-table{
+  min-width: 1250px;
+}
+
+.customer-table thead th:nth-child(1),
+.customer-table tbody td:nth-child(1){
+  width: 22%;
+}
+
+.customer-table thead th:nth-child(2),
+.customer-table tbody td:nth-child(2){
+  width: 12%;
+  text-align: center;
+}
+
+.customer-table thead th:nth-child(3),
+.customer-table tbody td:nth-child(3){
+  width: 14%;
+  text-align: center;
+}
+
+.customer-table thead th:nth-child(4),
+.customer-table tbody td:nth-child(4){
+  width: 24%;
+}
+
+.customer-table thead th:nth-child(5),
+.customer-table tbody td:nth-child(5){
+  width: 18%;
+}
+
+.customer-table tbody td:nth-child(3),
+.customer-table tbody td:nth-child(4),
+.customer-table tbody td:nth-child(5){
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.35;
+  vertical-align: top;
+}
+
+.customer-table tbody td:nth-child(2),
+.customer-table tbody td.actions-col{
+  vertical-align: middle;
+}
+
 .suppress-btn{
   appearance: none;
   -webkit-appearance: none;

@@ -115,7 +115,17 @@ entities {
   id
   name
   addresses { entities { line1 } }
-  ip_assignment_histories { entities { subnet } }
+  ip_assignment_histories {
+    entities {
+      subnet
+      ip_assignment {
+        subnet
+        parent_subnet {
+          name
+        }
+      }
+    }
+  }
 }
 `,
 });
@@ -135,7 +145,17 @@ entities {
   id
   name
   addresses { entities { line1 } }
-  ip_assignment_histories { entities { subnet } }
+  ip_assignment_histories {
+    entities {
+      subnet
+      ip_assignment {
+        subnet
+        parent_subnet {
+          name
+        }
+      }
+    }
+  }
 }
 `,
 });
@@ -155,7 +175,17 @@ entities {
   id
   name
   addresses { entities { line1 } }
-  ip_assignment_histories { entities { subnet } }
+  ip_assignment_histories {
+    entities {
+      subnet
+      ip_assignment {
+        subnet
+        parent_subnet {
+          name
+        }
+      }
+    }
+  }
 }
 `,
 });
@@ -173,7 +203,17 @@ entities {
   id
   name
   addresses { entities { line1 } }
-  ip_assignment_histories { entities { subnet } }
+  ip_assignment_histories {
+    entities {
+      subnet
+      ip_assignment {
+        subnet
+        parent_subnet {
+          name
+        }
+      }
+    }
+  }
 }
 `,
 });
@@ -353,7 +393,17 @@ query account_by_id($id: Int64Bit) {
       id
       name
       addresses { entities { line1 } }
-      ip_assignment_histories { entities { subnet } }
+      ip_assignment_histories {
+        entities {
+          subnet
+          ip_assignment {
+            subnet
+            parent_subnet {
+              name
+            }
+          }
+        }
+      }
     }
   }
 }

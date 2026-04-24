@@ -480,8 +480,12 @@ function mapAccountEntitiesToRows(entities, statusLabel) {
     );
     const address = firstNonEmpty(addressLines);
 
+    const assignments = account?.ip_assignment_histories?.entities || [];
     const ipAddresses = uniqStrings(
-      account?.ip_assignment_histories?.entities?.map((assignment) => assignment?.subnet),
+      assignments.map((assignment) => assignment?.ip_assignment?.subnet || assignment?.subnet),
+    );
+    const ipPools = uniqStrings(
+      assignments.map((assignment) => assignment?.ip_assignment?.parent_subnet?.name),
     );
 
     return {
@@ -490,6 +494,7 @@ function mapAccountEntitiesToRows(entities, statusLabel) {
       status: statusLabel,
       deviceName: "-",
       ipAddresses,
+      ipPools,
       address,
     };
   });

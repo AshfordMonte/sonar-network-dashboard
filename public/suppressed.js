@@ -50,6 +50,11 @@ function joinIps(ipAddresses) {
   return ipAddresses.filter(Boolean).join(", ");
 }
 
+function joinIpPools(ipPools) {
+  if (!Array.isArray(ipPools)) return "";
+  return ipPools.filter(Boolean).join(", ");
+}
+
 function renderTable(customers) {
   ui.rows.innerHTML = "";
 
@@ -85,6 +90,10 @@ function renderTable(customers) {
     const ipTd = document.createElement("td");
     ipTd.textContent = joinIps(c.ipAddresses) || "-";
 
+    // IP pools
+    const poolTd = document.createElement("td");
+    poolTd.textContent = joinIpPools(c.ipPools) || "-";
+
     // Address
     const addrTd = document.createElement("td");
     addrTd.textContent = c.address || "-";
@@ -102,7 +111,7 @@ function renderTable(customers) {
 
     actionsTd.appendChild(btn);
 
-    tr.append(nameTd, statusTd, ipTd, addrTd, actionsTd);
+    tr.append(nameTd, statusTd, ipTd, poolTd, addrTd, actionsTd);
     frag.appendChild(tr);
   }
 
@@ -126,7 +135,7 @@ function applyFilter() {
   }
 
   const filtered = lastCustomers.filter((c) => {
-    const blob = [c.customerName, joinIps(c.ipAddresses), c.address]
+    const blob = [c.customerName, joinIps(c.ipAddresses), joinIpPools(c.ipPools), c.address]
       .map(normalize)
       .join(" | ");
 

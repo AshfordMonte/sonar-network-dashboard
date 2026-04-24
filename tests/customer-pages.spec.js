@@ -8,6 +8,7 @@ function customer(id, overrides = {}) {
     status: "Good",
     deviceName: "-",
     ipAddresses: [`10.0.${id}.1/32`],
+    ipPools: [`Tower Pool ${id}`],
     address: `${id} Main St`,
     ...overrides,
   };
@@ -28,7 +29,16 @@ const customerPages = [
     endpoint: "/api/down-customers",
     heading: "Down Customers",
     badgeClass: "badge--down",
-    row: customer(202, { customerName: "Acme Down", status: "Down", address: "202 Pine St" }),
+    row: customer(202, {
+      customerName: "Acme Down",
+      status: "Down",
+      ipAddresses: ["172.16.100.26", "172.16.100.61", "172.20.3.20", "172.25.6.231"],
+      ipPools: [
+        "HCW - 007 - Cox - Customer Radwin NAT",
+        "HCW - 007 - 024 - RJR - Customer NAT",
+      ],
+      address: "202 Pine St",
+    }),
   },
   {
     title: "Uninventoried customers page",
@@ -53,9 +63,13 @@ for (const pageCase of customerPages) {
     await expect(page.getByRole("heading", { name: pageCase.heading })).toBeVisible();
     await expect(page.locator("tbody tr")).toHaveCount(1);
     await expect(page.locator("tbody tr")).toContainText(pageCase.row.customerName);
+    await expect(page.locator("tbody tr")).toContainText(pageCase.row.ipPools[0]);
     await expect(page.locator("tbody tr .badge")).toHaveClass(new RegExp(pageCase.badgeClass));
 
     await page.getByRole("searchbox").fill(pageCase.row.address);
+    await expect(page.locator("tbody tr")).toHaveCount(1);
+
+    await page.getByRole("searchbox").fill(pageCase.row.ipPools[0]);
     await expect(page.locator("tbody tr")).toHaveCount(1);
 
     await page.getByRole("searchbox").fill("no match");
@@ -173,6 +187,7 @@ test("suppressed customers page refreshes after unsuppress", async ({ page }) =>
   await expect(page.getByRole("heading", { name: "Suppressed Customers" })).toBeVisible();
   await expect(page.locator("tbody tr")).toHaveCount(1);
   await expect(page.locator("tbody tr")).toContainText("Suppressed One");
+  await expect(page.locator("tbody tr")).toContainText("Tower Pool 801");
 
   await page.getByRole("button", { name: "Unsuppress" }).click();
 
